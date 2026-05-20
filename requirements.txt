@@ -1,0 +1,6 @@
+numpy>=2.0
+opencv-python-headless>=4.10
+customtkinter>=5.2
+pillow>=10
+tkinterdnd2>=0.4
+pyinstaller>=6.0

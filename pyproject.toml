@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "seedance-watermark-remover"
+version = "1.0.0"
+description = "Offline Windows desktop app for removing small static corner watermarks from videos with OpenCV inpainting."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Baktier Sizhaev" }]
+keywords = [
+    "seedance",
+    "watermark-remover",
+    "video-watermark-remover",
+    "video-processing",
+    "opencv",
+    "opencv-python",
+    "inpainting",
+    "customtkinter",
+    "pyinstaller",
+    "ffmpeg",
+    "windows",
+    "desktop-app",
+    "portable-app",
+    "offline-tool",
+    "cpu-only",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Win32 (MS Windows)",
+    "Intended Audience :: End Users/Desktop",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Multimedia :: Video",
+    "Topic :: Utilities",
+]
+dependencies = [
+    "numpy>=2.0",
+    "opencv-python-headless>=4.10",
+    "customtkinter>=5.2",
+    "pillow>=10",
+    "tkinterdnd2>=0.4",
+]
+
+[tool.setuptools]
+py-modules = ["watermark_remover", "seedance_gui"]
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+exclude = [
+    ".git",
+    ".gsd",
+    ".gsd.migrating",
+    ".venv",
+    "build",
+    "dist",
+    "venv",
+]
+
+[tool.ruff.lint]
+select = ["B", "E", "F", "I", "UP"]
+
+[tool.ruff.format]
+line-ending = "native"

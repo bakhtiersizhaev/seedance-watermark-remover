@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" role="img" aria-labelledby="title desc">
+  <title id="title">Seedance Watermark Remover icon</title>
+  <desc id="desc">A minimal dark app mark with a clean video frame and removal spark.</desc>
+  <defs>
+    <linearGradient id="bg" x1="42" y1="20" x2="218" y2="236" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#182433"/>
+      <stop offset="0.52" stop-color="#0c1118"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+    <linearGradient id="accent" x1="72" y1="70" x2="190" y2="188" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8ee8ff"/>
+      <stop offset="0.5" stop-color="#58a6ff"/>
+      <stop offset="1" stop-color="#7c5cff"/>
+    </linearGradient>
+    <filter id="softShadow" x="-20%" y="-20%" width="140%" height="150%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#020817" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <rect width="256" height="256" rx="58" fill="url(#bg)"/>
+  <path d="M42 74c0-18.8 15.2-34 34-34h104c18.8 0 34 15.2 34 34v108c0 18.8-15.2 34-34 34H76c-18.8 0-34-15.2-34-34V74Z" fill="#121a25" filter="url(#softShadow)"/>
+  <path d="M60 84c0-13.3 10.7-24 24-24h88c13.3 0 24 10.7 24 24v84c0 13.3-10.7 24-24 24H84c-13.3 0-24-10.7-24-24V84Z" fill="#0b1118" stroke="#2b3a4d" stroke-width="4"/>
+  <path d="M83 94h62" stroke="#304257" stroke-width="10" stroke-linecap="round" opacity="0.8"/>
+  <path d="M83 124h90" stroke="#253448" stroke-width="10" stroke-linecap="round" opacity="0.72"/>
+  <path d="M83 154h54" stroke="#253448" stroke-width="10" stroke-linecap="round" opacity="0.72"/>
+  <path d="M161 88l8.6 26.4L197 123l-27.4 8.6L161 158l-8.6-26.4L125 123l27.4-8.6L161 88Z" fill="url(#accent)"/>
+  <path d="M172 62l3.8 11.8L188 78l-12.2 4.2L172 94l-3.8-11.8L156 78l12.2-4.2L172 62Z" fill="#d8f7ff" opacity="0.95"/>
+  <path d="M60 171c33-18 69-20 136-7v8c0 11-9 20-20 20H80c-11 0-20-9-20-20v-1Z" fill="url(#accent)" opacity="0.16"/>
+</svg>

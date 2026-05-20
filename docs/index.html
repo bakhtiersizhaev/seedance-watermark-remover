@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seedance Watermark Remover — Offline Windows Video Watermark Cleaner</title>
+  <meta name="description" content="Remove small static corner watermarks from videos locally on Windows. A portable offline desktop app by Baktier Sizhaev using OpenCV inpainting.">
+  <meta name="keywords" content="video watermark remover, offline watermark remover, Windows video cleanup, OpenCV inpainting, remove corner logo from video, portable desktop app">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Seedance Watermark Remover">
+  <meta property="og:description" content="Clean small static corner marks from videos locally on Windows without uploading your files.">
+  <link rel="icon" href="assets/icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <nav class="nav" aria-label="Language">
+      <a class="brand" href="#top" aria-label="Seedance Watermark Remover home">
+        <img src="assets/icon.svg" alt="" width="36" height="36">
+        <span>Seedance Cleaner</span>
+      </a>
+      <div class="language-switcher">
+        <span class="lang-label">Language</span>
+        <div class="langs">
+        <a href="index.html" aria-current="page">EN</a>
+        <a href="ru.html">RU</a>
+        <a href="zh.html">中文</a>
+        </div>
+      </div>
+    </nav>
+
+    <section id="top" class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Offline • Windows portable • CPU-only</p>
+        <h1>Remove small corner watermarks from videos without uploading them.</h1>
+        <p class="lead">Seedance Watermark Remover is a local desktop app by Baktier Sizhaev. It helps when you have an MP4 with a small corner badge, text label, logo overlay, or AI-generated mark and need a clean copy on your own computer.</p>
+        <div class="actions">
+          <a class="button primary" href="https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/latest/download/SeedanceWatermarkRemover-Windows-x64-portable.zip">Download Windows ZIP</a>
+          <a class="button secondary" href="#trust">SmartScreen + checksums</a>
+        </div>
+      </div>
+      <div class="product-card" aria-label="Application preview">
+        <div class="window-bar"><span></span><span></span><span></span></div>
+        <div class="drop-zone">
+          <img src="assets/icon.svg" alt="" width="74" height="74">
+          <strong>Drop a video here</strong>
+          <small>or paste a copied file with Ctrl+V</small>
+        </div>
+        <div class="progress"><span></span></div>
+        <p class="terminal">Detecting corner mark locally…<br>Writing a clean MP4 with original audio…</p>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Why users choose it">
+      <article>
+        <h2>For local cleanup</h2>
+        <p>Use it when you want to remove a small watermark from a video without sending the file to an online editor.</p>
+      </article>
+      <article>
+        <h2>For Windows users</h2>
+        <p>Download the portable ZIP, extract it, and run the EXE. The release includes the runtime files and ffmpeg.</p>
+      </article>
+      <article>
+        <h2>For realistic results</h2>
+        <p>It works best on small static corner marks. Large moving overlays may still need manual editing.</p>
+      </article>
+    </section>
+
+    <section id="download" class="steps">
+      <div>
+        <p class="eyebrow">How to use</p>
+        <h2>Three steps. No setup.</h2>
+      </div>
+      <ol>
+        <li><span>1</span>Download <a href="https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/latest/download/SeedanceWatermarkRemover-Windows-x64-portable.zip"><code>SeedanceWatermarkRemover-Windows-x64-portable.zip</code></a> from the latest release.</li>
+        <li><span>2</span>Extract the ZIP and keep the whole folder together.</li>
+        <li><span>3</span>Run <code>SeedanceWatermarkRemover.exe</code>, choose your video, and save a clean copy.</li>
+      </ol>
+    </section>
+
+
+    <section id="trust" class="trust">
+      <div>
+        <p class="eyebrow">Security notice</p>
+        <h2>Why Windows may show SmartScreen</h2>
+        <p>This is a new unsigned open-source Windows executable. Windows SmartScreen can show “Windows protected your PC” and “Unknown publisher” until the app is code-signed or gains reputation. The source code and build script are public. If you trust this release, use More info → Run anyway, or verify the SHA256 checksum first.</p>
+      </div>
+      <div class="checksum-card">
+        <h3>SHA256 checksums</h3>
+        <pre><code>4dbb2a47b6272bceb7d8abe9e9aaa320b77a6af1a8fa646f467f5646ae41c7f3  SeedanceWatermarkRemover-Windows-x64-portable.zip
+e502c2a86a7d5fb4cd9507d8c44cba8803dbaaa90172a7648d8327ed9123b267  SeedanceWatermarkRemover/SeedanceWatermarkRemover.exe</code></pre>
+        <h3>Future signing plan</h3>
+        <p>For a larger public release, the next step is to buy an OV/EV code-signing certificate and sign the EXE so Windows shows a verified publisher.</p>
+      </div>
+    </section>
+
+    <section id="faq" class="faq">
+      <div>
+        <p class="eyebrow">Before you download</p>
+        <h2>Common questions</h2>
+      </div>
+      <details open>
+        <summary>Does it upload my video?</summary>
+        <p>No. Processing happens locally on your computer.</p>
+      </details>
+      <details>
+        <summary>Will it remove every watermark?</summary>
+        <p>No. It is made for small static corner text, badges, and simple logo overlays. Complex moving marks can need manual editing.</p>
+      </details>
+      <details>
+        <summary>Does it change the original file?</summary>
+        <p>No. It creates a new output video and leaves the source file untouched.</p>
+      </details>
+    </section>
+
+    <section id="source" class="source-note">
+      <p><strong>Source code:</strong> the repository contains the app source, build checks, logo assets, and this GitHub Pages site. The portable ZIP belongs in GitHub Releases.</p>
+    </section>
+
+    <footer>
+      <p>MIT © Baktier Sizhaev</p>
+      <p>Independent local desktop utility. No third-party branding or affiliation claimed.</p>
+    </footer>
+  </main>
+</body>
+</html>

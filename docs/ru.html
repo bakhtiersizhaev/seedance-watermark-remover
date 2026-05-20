@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seedance Watermark Remover — локальное удаление watermark из видео</title>
+  <meta name="description" content="Локальное Windows-приложение для удаления небольших статичных watermark, логотипов и текстовых меток из углов видео. Автор: Baktier Sizhaev.">
+  <meta name="keywords" content="удалить watermark из видео, убрать водяной знак с видео, локальная обработка видео, Windows приложение, OpenCV inpainting, portable app">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Seedance Watermark Remover">
+  <meta property="og:description" content="Уберите небольшой статичный watermark из угла видео локально на Windows, без загрузки файла во внешние сервисы.">
+  <link rel="icon" href="assets/icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <nav class="nav" aria-label="Язык">
+      <a class="brand" href="#top" aria-label="Seedance Watermark Remover">
+        <img src="assets/icon.svg" alt="" width="36" height="36">
+        <span>Seedance Cleaner</span>
+      </a>
+      <div class="language-switcher">
+        <span class="lang-label">Язык</span>
+        <div class="langs">
+        <a href="index.html">EN</a>
+        <a href="ru.html" aria-current="page">RU</a>
+        <a href="zh.html">中文</a>
+        </div>
+      </div>
+    </nav>
+
+    <section id="top" class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">Локально • Portable для Windows • Только CPU</p>
+        <h1>Уберите небольшой watermark из угла видео без загрузки файла в онлайн-сервис.</h1>
+        <p class="lead">Seedance Watermark Remover — локальное приложение для Windows от Baktier Sizhaev. Оно подходит, когда в MP4 осталась маленькая метка в углу: текст, логотип, значок или пометка от генератора видео, а нужен чистый файл на своём компьютере.</p>
+        <div class="actions">
+          <a class="button primary" href="https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/latest/download/SeedanceWatermarkRemover-Windows-x64-portable.zip">Скачать Windows ZIP</a>
+          <a class="button secondary" href="#trust">SmartScreen и SHA256</a>
+        </div>
+      </div>
+      <div class="product-card" aria-label="Превью приложения">
+        <div class="window-bar"><span></span><span></span><span></span></div>
+        <div class="drop-zone">
+          <img src="assets/icon.svg" alt="" width="74" height="74">
+          <strong>Перетащите видео сюда</strong>
+          <small>или вставьте скопированный файл через Ctrl+V</small>
+        </div>
+        <div class="progress"><span></span></div>
+        <p class="terminal">Поиск метки в углу локально…<br>Сохранение чистого MP4 с исходным аудио…</p>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="Почему это полезно">
+      <article>
+        <h2>Для локальной обработки</h2>
+        <p>Используйте, если нужно убрать водяной знак с видео без онлайн-редакторов и без передачи файла наружу.</p>
+      </article>
+      <article>
+        <h2>Для Windows</h2>
+        <p>Скачайте portable ZIP, распакуйте папку и запустите EXE. Все runtime-файлы и ffmpeg уже внутри.</p>
+      </article>
+      <article>
+        <h2>Для честного результата</h2>
+        <p>Лучше всего работают небольшие статичные отметки в углах. Большие движущиеся наложения могут требовать ручной правки.</p>
+      </article>
+    </section>
+
+    <section id="download" class="steps">
+      <div>
+        <p class="eyebrow">Как пользоваться</p>
+        <h2>Три шага. Без настройки.</h2>
+      </div>
+      <ol>
+        <li><span>1</span>Скачайте <a href="https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/latest/download/SeedanceWatermarkRemover-Windows-x64-portable.zip"><code>SeedanceWatermarkRemover-Windows-x64-portable.zip</code></a> из последнего релиза.</li>
+        <li><span>2</span>Распакуйте ZIP и держите файлы одной папкой.</li>
+        <li><span>3</span>Запустите <code>SeedanceWatermarkRemover.exe</code>, выберите видео и сохраните чистую копию.</li>
+      </ol>
+    </section>
+
+
+    <section id="trust" class="trust">
+      <div>
+        <p class="eyebrow">Безопасность</p>
+        <h2>Почему Windows может показать SmartScreen</h2>
+        <p>Это новый open-source EXE для Windows, пока без цифровой подписи. Поэтому SmartScreen может показать “Windows protected your PC” и “Unknown publisher”. Это предупреждение о репутации и подписи, а не подтверждённое обнаружение вируса. Исходный код и сборочный скрипт открыты. Если вы доверяете релизу, нажмите More info → Run anyway или сначала проверьте SHA256.</p>
+      </div>
+      <div class="checksum-card">
+        <h3>SHA256 checksums</h3>
+        <pre><code>4dbb2a47b6272bceb7d8abe9e9aaa320b77a6af1a8fa646f467f5646ae41c7f3  SeedanceWatermarkRemover-Windows-x64-portable.zip
+e502c2a86a7d5fb4cd9507d8c44cba8803dbaaa90172a7648d8327ed9123b267  SeedanceWatermarkRemover/SeedanceWatermarkRemover.exe</code></pre>
+        <h3>План для следующих релизов</h3>
+        <p>Если проект будет распространяться шире, следующий правильный шаг — купить OV/EV сертификат подписи кода и подписывать EXE, чтобы Windows показывал проверенного издателя.</p>
+      </div>
+    </section>
+
+    <section id="faq" class="faq">
+      <div>
+        <p class="eyebrow">Перед скачиванием</p>
+        <h2>Частые вопросы</h2>
+      </div>
+      <details open>
+        <summary>Видео куда-то загружается?</summary>
+        <p>Нет. Обработка идёт локально на вашем компьютере.</p>
+      </details>
+      <details>
+        <summary>Удалит любой watermark?</summary>
+        <p>Нет. Приложение рассчитано на небольшие статичные отметки в углах: текст, badge или простой логотип. Сложные движущиеся метки лучше править вручную.</p>
+      </details>
+      <details>
+        <summary>Исходный файл изменится?</summary>
+        <p>Нет. Приложение создаёт новый выходной файл и не перезаписывает исходное видео.</p>
+      </details>
+    </section>
+
+    <section id="source" class="source-note">
+      <p><strong>Исходный код:</strong> в репозитории лежат исходный код приложения, проверки сборки, логотипы и сайт GitHub Pages. Portable ZIP лучше публиковать как файл в GitHub Releases.</p>
+    </section>
+
+    <footer>
+      <p>MIT © Baktier Sizhaev</p>
+      <p>Независимая локальная утилита для локальной обработки видео. Чужое авторство и официальная связь с другими брендами не заявляются.</p>
+    </footer>
+  </main>
+</body>
+</html>

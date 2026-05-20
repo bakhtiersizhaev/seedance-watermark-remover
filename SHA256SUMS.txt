@@ -1,0 +1,2 @@
+4dbb2a47b6272bceb7d8abe9e9aaa320b77a6af1a8fa646f467f5646ae41c7f3  SeedanceWatermarkRemover-Windows-x64-portable.zip
+e502c2a86a7d5fb4cd9507d8c44cba8803dbaaa90172a7648d8327ed9123b267  SeedanceWatermarkRemover/SeedanceWatermarkRemover.exe

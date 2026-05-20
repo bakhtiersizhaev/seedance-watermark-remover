@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Seedance Watermark Remover — 本地视频角落水印清理工具</title>
+  <meta name="description" content="一个适用于 Windows 的本地桌面工具，用 OpenCV 修复小型静态角落水印、文字标记和简单 logo 覆盖。作者：Baktier Sizhaev。">
+  <meta name="keywords" content="视频去水印, 本地视频去水印, Windows 去水印工具, OpenCV 修复, 去除视频角落 logo, portable desktop app">
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="Seedance Watermark Remover">
+  <meta property="og:description" content="在 Windows 本地清理视频角落的小型静态水印，不需要上传文件。">
+  <link rel="icon" href="assets/icon.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <nav class="nav" aria-label="语言">
+      <a class="brand" href="#top" aria-label="Seedance Watermark Remover">
+        <img src="assets/icon.svg" alt="" width="36" height="36">
+        <span>Seedance Cleaner</span>
+      </a>
+      <div class="language-switcher">
+        <span class="lang-label">语言</span>
+        <div class="langs">
+        <a href="index.html">EN</a>
+        <a href="ru.html">RU</a>
+        <a href="zh.html" aria-current="page">中文</a>
+        </div>
+      </div>
+    </nav>
+
+    <section id="top" class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">本地处理 • Windows portable • CPU-only</p>
+        <h1>在本地清理视频角落的小型水印，不需要上传文件。</h1>
+        <p class="lead">Seedance Watermark Remover 是 Baktier Sizhaev 制作的轻量级桌面工具。它适合处理 MP4 角落里的小文字、badge、简单 logo 覆盖或 AI-generated 标记，并在你的电脑上生成一个干净副本。</p>
+        <div class="actions">
+          <a class="button primary" href="https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/latest/download/SeedanceWatermarkRemover-Windows-x64-portable.zip">下载 Windows ZIP</a>
+          <a class="button secondary" href="#trust">SmartScreen 与 SHA256</a>
+        </div>
+      </div>
+      <div class="product-card" aria-label="应用预览">
+        <div class="window-bar"><span></span><span></span><span></span></div>
+        <div class="drop-zone">
+          <img src="assets/icon.svg" alt="" width="74" height="74">
+          <strong>把视频拖到这里</strong>
+          <small>也可以复制文件后按 Ctrl+V</small>
+        </div>
+        <div class="progress"><span></span></div>
+        <p class="terminal">本地检测角落标记…<br>保留音频并写出新的 MP4…</p>
+      </div>
+    </section>
+
+    <section class="grid" aria-label="适用场景">
+      <article>
+        <h2>适合本地处理</h2>
+        <p>当你想去掉视频角落的小水印，但不想把文件传到在线编辑器时，可以使用它。</p>
+      </article>
+      <article>
+        <h2>适合 Windows 用户</h2>
+        <p>下载 portable ZIP，解压整个文件夹，然后运行 EXE。运行所需文件和 ffmpeg 已经包含在里面。</p>
+      </article>
+      <article>
+        <h2>适合真实预期</h2>
+        <p>它最适合小型静态角落标记。大型、移动或位于画面中心的覆盖物可能仍需要手动编辑。</p>
+      </article>
+    </section>
+
+    <section id="download" class="steps">
+      <div>
+        <p class="eyebrow">使用方法</p>
+        <h2>三步开始。不需要复杂配置。</h2>
+      </div>
+      <ol>
+        <li><span>1</span>从最新 release 下载 <a href="https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/latest/download/SeedanceWatermarkRemover-Windows-x64-portable.zip"><code>SeedanceWatermarkRemover-Windows-x64-portable.zip</code></a>。</li>
+        <li><span>2</span>解压 ZIP，并保持整个文件夹完整。</li>
+        <li><span>3</span>运行 <code>SeedanceWatermarkRemover.exe</code>，选择视频，生成干净副本。</li>
+      </ol>
+    </section>
+
+
+    <section id="trust" class="trust">
+      <div>
+        <p class="eyebrow">安全提示</p>
+        <h2>为什么 Windows 可能显示 SmartScreen</h2>
+        <p>这是一个新的开源 Windows EXE，目前还没有数字签名。因此 SmartScreen 可能显示 “Windows protected your PC” 和 “Unknown publisher”。这属于 Windows 对新文件和未签名发布者的信誉提示，不等于确认有病毒。源码和构建脚本是公开的。如果你信任这个 release，可以点击 More info → Run anyway，也可以先核对 SHA256。</p>
+      </div>
+      <div class="checksum-card">
+        <h3>SHA256 校验值</h3>
+        <pre><code>4dbb2a47b6272bceb7d8abe9e9aaa320b77a6af1a8fa646f467f5646ae41c7f3  SeedanceWatermarkRemover-Windows-x64-portable.zip
+e502c2a86a7d5fb4cd9507d8c44cba8803dbaaa90172a7648d8327ed9123b267  SeedanceWatermarkRemover/SeedanceWatermarkRemover.exe</code></pre>
+        <h3>后续签名计划</h3>
+        <p>如果这个项目面向更多用户发布，下一步应该购买 OV/EV 代码签名证书并签名 EXE，让 Windows 显示已验证的发布者。</p>
+      </div>
+    </section>
+
+    <section id="faq" class="faq">
+      <div>
+        <p class="eyebrow">下载前先确认</p>
+        <h2>常见问题</h2>
+      </div>
+      <details open>
+        <summary>视频会上传到外部服务吗？</summary>
+        <p>不会。处理在你的 Windows 电脑本地完成。</p>
+      </details>
+      <details>
+        <summary>它能去掉所有水印吗？</summary>
+        <p>不能。它主要用于小型静态角落文字、badge 或简单 logo。复杂移动水印通常需要手动编辑。</p>
+      </details>
+      <details>
+        <summary>会覆盖原视频吗？</summary>
+        <p>不会。工具会生成新的输出文件，原视频保持不变。</p>
+      </details>
+    </section>
+
+    <section id="source" class="source-note">
+      <p><strong>源代码：</strong>仓库包含应用源码、构建检查、logo assets 和 GitHub Pages 网站。Portable ZIP 适合作为 GitHub Release 附件发布。</p>
+    </section>
+
+    <footer>
+      <p>MIT © Baktier Sizhaev</p>
+      <p>独立的本地桌面工具。不声明第三方品牌归属或官方关系。</p>
+    </footer>
+  </main>
+</body>
+</html>
