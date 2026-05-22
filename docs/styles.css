@@ -292,9 +292,30 @@ footer {
 
 .steps li {
   display: grid;
-  grid-template-columns: 34px 1fr;
+  grid-template-columns: 34px minmax(0, 1fr);
   gap: 12px;
   align-items: start;
+}
+
+.steps li > span {
+  grid-column: 1;
+}
+
+.steps li > .step-copy {
+  grid-column: 2;
+  min-width: 0;
+}
+
+.steps a {
+  color: var(--text);
+  text-decoration: underline;
+  text-decoration-color: rgba(88, 166, 255, 0.55);
+  text-underline-offset: 3px;
+}
+
+.steps code {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .steps span {
@@ -476,11 +497,10 @@ h2,
 .lead,
 .button,
 .langs a,
-.steps li,
 .faq summary,
 .trust p,
 .checksum-card p {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
 
 @media (max-width: 860px) {
