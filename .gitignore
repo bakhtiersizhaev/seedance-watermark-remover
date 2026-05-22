@@ -20,6 +20,9 @@ node_modules/
 .next/
 dist/
 build/
+SeedanceWatermarkRemover-Windows-x64-portable*.zip
+SeedanceWatermarkRemover-Windows-x64-portable*/
+.artifacts/
 __pycache__/
 *.pyc
 .venv/

@@ -4,6 +4,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import cv2
+import numpy as np
+
 from seedance_gui import (
     SeedanceApp,
     build_centered_geometry,
@@ -13,6 +16,7 @@ from seedance_gui import (
     normalize_path,
     parse_region,
 )
+from watermark_remover import _auto_detect
 
 
 def absolute_widget_bottom(widget, root) -> int:
@@ -71,6 +75,64 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
             first.write_bytes(b"existing")
 
             self.assertEqual(build_output_path(source, folder), folder / "clip_clean_2.mp4")
+
+    def test_auto_detect_covers_wide_top_right_watermark_on_portrait_video(self) -> None:
+        width, height = 540, 960
+        watermark_x, watermark_y = 350, 42
+        frames = []
+        for _ in range(8):
+            frame = np.zeros((height, width, 3), dtype=np.uint8)
+            cv2.putText(
+                frame,
+                "AI Generated",
+                (watermark_x, watermark_y),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.65,
+                (255, 255, 255),
+                2,
+                cv2.LINE_AA,
+            )
+            frames.append(frame.astype(np.float32))
+
+        mean_frame = np.mean(np.stack(frames), axis=0).astype(np.uint8)
+        detected = _auto_detect(frames, mean_frame, width, height)
+
+        self.assertIsNotNone(detected)
+        x, y, w, h = detected
+        self.assertGreaterEqual(x, width - 140)
+        self.assertLessEqual(y, watermark_y)
+        self.assertGreaterEqual(w, 60)
+        self.assertGreaterEqual(h, 20)
+
+    def test_auto_detect_prefers_compact_top_left_badge_over_bottom_scene_edges(self) -> None:
+        width, height = 720, 1280
+        frames = []
+        for _ in range(8):
+            frame = np.zeros((height, width, 3), dtype=np.uint8)
+            cv2.rectangle(frame, (32, 18), (64, 42), (80, 80, 80), 1)
+            cv2.putText(
+                frame,
+                "AI",
+                (38, 37),
+                cv2.FONT_HERSHEY_SIMPLEX,
+                0.58,
+                (180, 180, 180),
+                1,
+                cv2.LINE_AA,
+            )
+            for offset in range(0, 170, 12):
+                cv2.line(frame, (0, height - 1 - offset), (220, height - 110 + offset // 2), (210, 210, 210), 2)
+            frames.append(frame.astype(np.float32))
+
+        mean_frame = np.mean(np.stack(frames), axis=0).astype(np.uint8)
+        detected = _auto_detect(frames, mean_frame, width, height)
+
+        self.assertIsNotNone(detected)
+        x, y, w, h = detected
+        self.assertLessEqual(x, 36)
+        self.assertLessEqual(y, 20)
+        self.assertGreaterEqual(w, 30)
+        self.assertGreaterEqual(h, 20)
 
 
 if __name__ == "__main__":

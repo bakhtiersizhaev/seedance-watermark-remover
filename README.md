@@ -8,9 +8,9 @@
 
 **Offline Windows app for removing small static corner watermarks locally.**
 
-[![Download Windows ZIP](https://img.shields.io/badge/Download-Windows%20ZIP-58a6ff?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/latest/download/SeedanceWatermarkRemover-Windows-x64-portable.zip)
+[![Download Windows ZIP](https://img.shields.io/badge/Download-Windows%20ZIP-58a6ff?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.0.1/SeedanceWatermarkRemover-Windows-x64-portable.zip)
 [![GitHub Pages](https://img.shields.io/badge/Website-GitHub%20Pages-7c5cff?style=for-the-badge)](https://bakhtiersizhaev.github.io/seedance-watermark-remover/)
-[![Release](https://img.shields.io/badge/Release-v1.0.0-5ee2a0?style=for-the-badge)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/latest)
+[![Release](https://img.shields.io/badge/Release-v1.0.1-5ee2a0?style=for-the-badge)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/tag/v1.0.1)
 
 **Language:** [English](https://bakhtiersizhaev.github.io/seedance-watermark-remover/) · [Русский](https://bakhtiersizhaev.github.io/seedance-watermark-remover/ru.html) · [中文](https://bakhtiersizhaev.github.io/seedance-watermark-remover/zh.html)
 
@@ -46,9 +46,9 @@ It is useful for creators, editors, testers, and developers who need a quick loc
 
 For most Windows users, use the ready-built portable release asset:
 
-[Download SeedanceWatermarkRemover-Windows-x64-portable.zip](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/latest/download/SeedanceWatermarkRemover-Windows-x64-portable.zip)
+[Download SeedanceWatermarkRemover-Windows-x64-portable.zip](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.0.1/SeedanceWatermarkRemover-Windows-x64-portable.zip)
 
-You can also open the [latest GitHub Release](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/latest) if you want checksums or release notes. Extract the ZIP first, open the extracted `SeedanceWatermarkRemover` folder, and run:
+You can also open the [v1.0.1 GitHub Release](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/tag/v1.0.1) if you want checksums or release notes. Extract the ZIP first, open the extracted `SeedanceWatermarkRemover` folder, and run:
 
 ```text
 SeedanceWatermarkRemover.exe
@@ -62,10 +62,7 @@ Windows may show **"Windows protected your PC"** because this is a new unsigned 
 
 This warning is about Windows reputation and code signing, not a confirmed virus finding. The source code, build script, and release checks are public. If you trust this release, click **More info → Run anyway**. You can also verify the downloaded file with SHA256 before running it.
 
-```text
-4dbb2a47b6272bceb7d8abe9e9aaa320b77a6af1a8fa646f467f5646ae41c7f3  SeedanceWatermarkRemover-Windows-x64-portable.zip
-e502c2a86a7d5fb4cd9507d8c44cba8803dbaaa90172a7648d8327ed9123b267  SeedanceWatermarkRemover/SeedanceWatermarkRemover.exe
-```
+Download [SHA256SUMS.txt](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.0.1/SHA256SUMS.txt) from the release page to verify the portable ZIP and packaged EXE.
 
 For a future larger public release, the right next step is to buy an OV/EV code-signing certificate and sign `SeedanceWatermarkRemover.exe` so Windows shows a verified publisher instead of Unknown publisher.
 

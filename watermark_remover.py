@@ -25,33 +25,90 @@ def _auto_detect(frames, mean_frame, width, height):
     stack = np.stack(frames, axis=0)
     std_map = np.std(stack, axis=0).mean(axis=2)
 
-    corner_h = max(60, int(height * 0.08))
-    corner_w = max(120, int(width * 0.12))
-    corners = [
-        (0, 0, corner_h, corner_w),
-        (0, width - corner_w, corner_h, width),
-        (height - corner_h, 0, height, corner_w),
-        (height - corner_h, width - corner_w, height, width),
+    shorter_side = min(width, height)
+    longer_side = max(width, height)
+    is_portrait = height > width
+
+    base_h = max(60, int(height * 0.08), int(shorter_side * 0.10))
+    base_w = max(120, int(width * 0.12), int(shorter_side * 0.16))
+    if is_portrait:
+        base_w = max(base_w, int(longer_side * 0.18))
+
+    corner_sizes = [
+        (base_h, base_w),
+        (max(base_h, int(height * 0.12)), max(base_w, int(width * 0.20))),
     ]
+    candidates = []
+    for corner_h, corner_w in corner_sizes:
+        corner_h = min(height, corner_h)
+        corner_w = min(width, corner_w)
+        candidates.extend(
+            [
+                (0, 0, corner_h, corner_w),
+                (0, width - corner_w, corner_h, width),
+                (height - corner_h, 0, height, corner_w),
+                (height - corner_h, width - corner_w, height, width),
+            ]
+        )
+
+    small_sizes = [
+        (max(42, int(shorter_side * 0.08)), max(64, int(shorter_side * 0.12))),
+        (max(60, int(shorter_side * 0.11)), max(90, int(shorter_side * 0.17))),
+        (max(80, int(shorter_side * 0.14)), max(120, int(shorter_side * 0.22))),
+    ]
+    offsets = sorted({0, 12, 24, max(32, int(shorter_side * 0.05)), max(48, int(shorter_side * 0.08))})
+    for window_h, window_w in small_sizes:
+        window_h = min(height, window_h)
+        window_w = min(width, window_w)
+        for offset_y in offsets:
+            for offset_x in offsets:
+                if offset_x + window_w > width or offset_y + window_h > height:
+                    continue
+                candidates.extend(
+                    [
+                        (offset_y, offset_x, offset_y + window_h, offset_x + window_w),
+                        (offset_y, width - offset_x - window_w, offset_y + window_h, width - offset_x),
+                        (height - offset_y - window_h, offset_x, height - offset_y, offset_x + window_w),
+                        (
+                            height - offset_y - window_h,
+                            width - offset_x - window_w,
+                            height - offset_y,
+                            width - offset_x,
+                        ),
+                    ]
+                )
 
     best, best_score = None, 0
-    for r1, c1, r2, c2 in corners:
+    seen = set()
+    for r1, c1, r2, c2 in candidates:
+        candidate = (r1, c1, r2, c2)
+        if candidate in seen:
+            continue
+        seen.add(candidate)
         roi_gray = cv2.cvtColor(mean_frame[r1:r2, c1:c2], cv2.COLOR_BGR2GRAY)
         edges = cv2.Canny(roi_gray, 20, 60)
         edge_density = edges.mean() / 255.0
         temporal_std = std_map[r1:r2, c1:c2].mean()
         stability = 1.0 / (1.0 + temporal_std)
-        score = edge_density * stability
 
-        if score > best_score and edge_density > 0.002:
+        if edge_density > 0.002:
             ys, xs = np.where(edges > 0)
             if len(xs) > 20:
+                bbox_w = int(xs.max() - xs.min()) + 1
+                bbox_h = int(ys.max() - ys.min()) + 1
+                bbox_area = bbox_w * bbox_h
+                roi_area = max(1, (r2 - r1) * (c2 - c1))
+                compactness = max(0.15, 1.0 - min(1.0, bbox_area / roi_area))
+                score = edge_density * stability * compactness
+                if score <= best_score:
+                    continue
+
                 best_score = score
                 pad = 8
                 x = max(0, c1 + int(xs.min()) - pad)
                 y = max(0, r1 + int(ys.min()) - pad)
-                w = min(width - x, int(xs.max() - xs.min()) + 1 + 2 * pad)
-                h = min(height - y, int(ys.max() - ys.min()) + 1 + 2 * pad)
+                w = min(width - x, bbox_w + 2 * pad)
+                h = min(height - y, bbox_h + 2 * pad)
                 best = (x, y, w, h)
 
     return best

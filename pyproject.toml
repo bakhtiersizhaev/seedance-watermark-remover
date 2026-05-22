@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "seedance-watermark-remover"
-version = "1.0.0"
+version = "1.0.1"
 description = "Offline Windows desktop app for removing small static corner watermarks from videos with OpenCV inpainting."
 readme = "README.md"
 requires-python = ">=3.10"
