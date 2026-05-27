@@ -4,10 +4,12 @@ import tempfile
 import unittest
 import zipfile
 from pathlib import Path
+from unittest import mock
 
 import cv2
 import numpy as np
 
+from build_exe import find_ffmpeg
 from seedance_gui import (
     SeedanceApp,
     build_centered_geometry,
@@ -149,6 +151,23 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
         self.assertEqual(first.parent, Path("C:/tmp"))
         self.assertTrue(first.name.startswith("clip_clean_"))
         self.assertEqual(first.suffix, ".mp4")
+
+    def test_build_finds_real_chocolatey_ffmpeg_before_path_shim(self) -> None:
+        real = Path("C:/ProgramData/chocolatey/lib/ffmpeg/tools/ffmpeg/bin/ffmpeg.exe")
+        shim = Path("C:/ProgramData/chocolatey/bin/ffmpeg.exe")
+
+        def fake_exists(path: Path) -> bool:
+            return path in {real, shim}
+
+        with (
+            mock.patch("build_exe.os.name", "nt"),
+            mock.patch("build_exe.os.environ.get", return_value=None),
+            mock.patch("build_exe.ROOT", Path("D:/repo")),
+            mock.patch("build_exe.shutil.which", return_value=str(shim)),
+            mock.patch("pathlib.Path.exists", fake_exists),
+            mock.patch("pathlib.Path.resolve", lambda self: self),
+        ):
+            self.assertEqual(find_ffmpeg(), real)
 
     def test_auto_detect_covers_wide_top_right_watermark_on_portrait_video(self) -> None:
         width, height = 540, 960

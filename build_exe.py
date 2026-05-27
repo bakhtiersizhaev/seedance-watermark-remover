@@ -71,12 +71,20 @@ def run(cmd: list[str], *, cwd: Path = ROOT) -> None:
 
 
 def find_ffmpeg() -> Path:
-    local_ffmpeg = ROOT / "ffmpeg.exe"
-    if local_ffmpeg.exists():
-        return local_ffmpeg.resolve()
+    candidates: list[Path] = []
+    env_ffmpeg = os.environ.get("FFMPEG_PATH")
+    if env_ffmpeg:
+        candidates.append(Path(env_ffmpeg))
+    candidates.append(ROOT / "ffmpeg.exe")
+    if os.name == "nt":
+        candidates.append(Path("C:/ProgramData/chocolatey/lib/ffmpeg/tools/ffmpeg/bin/ffmpeg.exe"))
     found = shutil.which("ffmpeg") or shutil.which("ffmpeg.exe")
     if found:
-        return Path(found).resolve()
+        candidates.append(Path(found))
+
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate.resolve()
     raise SystemExit("ffmpeg.exe not found. Put ffmpeg.exe in project root or on PATH.")
 
 

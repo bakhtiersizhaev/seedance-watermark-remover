@@ -8,9 +8,9 @@
 
 **Offline Windows app for removing small static corner watermarks locally.**
 
-[![Download Windows ZIP](https://img.shields.io/badge/Download-Windows%20ZIP-58a6ff?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.2.2/SeedanceWatermarkRemover-Windows-x64-portable.zip)
+[![Download Windows ZIP](https://img.shields.io/badge/Download-Windows%20ZIP-58a6ff?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.2.3/SeedanceWatermarkRemover-Windows-x64-portable.zip)
 [![GitHub Pages](https://img.shields.io/badge/Website-GitHub%20Pages-7c5cff?style=for-the-badge)](https://bakhtiersizhaev.github.io/seedance-watermark-remover/)
-[![Release](https://img.shields.io/badge/Release-v1.2.2-5ee2a0?style=for-the-badge)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/tag/v1.2.2)
+[![Release](https://img.shields.io/badge/Release-v1.2.3-5ee2a0?style=for-the-badge)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/tag/v1.2.3)
 [![CI](https://github.com/bakhtiersizhaev/seedance-watermark-remover/actions/workflows/ci.yml/badge.svg)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/actions/workflows/ci.yml)
 
 **Language:** [English](https://bakhtiersizhaev.github.io/seedance-watermark-remover/) · [Русский](https://bakhtiersizhaev.github.io/seedance-watermark-remover/ru.html) · [中文](https://bakhtiersizhaev.github.io/seedance-watermark-remover/zh.html)
@@ -47,9 +47,9 @@ It is useful for creators, editors, testers, and developers who need a quick loc
 
 For most Windows users, use the ready-built portable release asset:
 
-[Download SeedanceWatermarkRemover-Windows-x64-portable.zip](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.2.2/SeedanceWatermarkRemover-Windows-x64-portable.zip)
+[Download SeedanceWatermarkRemover-Windows-x64-portable.zip](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.2.3/SeedanceWatermarkRemover-Windows-x64-portable.zip)
 
-You can also open the [v1.2.2 GitHub Release](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/tag/v1.2.2) if you want checksums or release notes. Extract the ZIP first, open the extracted `SeedanceWatermarkRemover` folder, and run:
+You can also open the [v1.2.3 GitHub Release](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/tag/v1.2.3) if you want checksums or release notes. Extract the ZIP first, open the extracted `SeedanceWatermarkRemover` folder, and run:
 
 ```text
 SeedanceWatermarkRemover.exe
@@ -63,7 +63,7 @@ Windows may show **"Windows protected your PC"** because this is a new unsigned 
 
 This warning is about Windows reputation and code signing, not a confirmed virus finding. The source code, build script, and release checks are public. If you trust this release, click **More info → Run anyway**. You can also verify the downloaded file with SHA256 before running it.
 
-Download [SHA256SUMS.txt](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.2.2/SHA256SUMS.txt) from the release page to verify the portable ZIP and packaged EXE.
+Download [SHA256SUMS.txt](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.2.3/SHA256SUMS.txt) from the release page to verify the portable ZIP and packaged EXE.
 
 For a future larger public release, the right next step is to buy an OV/EV code-signing certificate and sign `SeedanceWatermarkRemover.exe` so Windows shows a verified publisher instead of Unknown publisher.
 
@@ -286,8 +286,8 @@ The build script verifies the source app, packaged EXE, release folder, release 
 GitHub Actions runs quick quality checks on `main` and pull requests. Pushing a semver tag builds the Windows portable ZIP, writes `SHA256SUMS.txt`, uploads workflow artifacts, and publishes the GitHub Release assets:
 
 ```bash
-git tag v1.2.2
-git push origin v1.2.2
+git tag v1.2.3
+git push origin v1.2.3
 ```
 
 ---

@@ -33,7 +33,8 @@ except ImportError:
     TkinterDnD = None
 
 APP_NAME = "Seedance Watermark Remover"
-APP_VERSION = "1.2.2"
+APP_VERSION = "1.2.3"
+APP_USER_MODEL_ID = "BakhtierSizhaev.SeedanceWatermarkRemover"
 GITHUB_URL = "https://github.com/bakhtiersizhaev/seedance-watermark-remover"
 GITHUB_RELEASES_URL = f"{GITHUB_URL}/releases"
 GITHUB_LATEST_RELEASE_API = "https://api.github.com/repos/bakhtiersizhaev/seedance-watermark-remover/releases/latest"
@@ -72,6 +73,15 @@ def enable_windows_dpi_awareness() -> None:
             ctypes.windll.user32.SetProcessDPIAware()
         except (AttributeError, OSError):
             pass
+
+
+def enable_windows_app_user_model_id() -> None:
+    if os.name != "nt":
+        return
+    try:
+        ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(APP_USER_MODEL_ID)
+    except (AttributeError, OSError):
+        pass
 
 
 def choose_window_size(screen_width: int, screen_height: int) -> tuple[int, int, int, int]:
@@ -428,6 +438,7 @@ class QueueWriter:
 class SeedanceApp:
     def __init__(self, hidden: bool = False, check_updates_on_startup: bool = True) -> None:
         enable_windows_dpi_awareness()
+        enable_windows_app_user_model_id()
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
 
@@ -485,6 +496,13 @@ class SeedanceApp:
         if icon:
             try:
                 self.root.iconbitmap(str(icon))
+            except tk.TclError:
+                pass
+        png_icon = find_resource("assets", "seedance-cleaner-icon-256.png")
+        if png_icon:
+            try:
+                self._icon_photo = tk.PhotoImage(file=str(png_icon))
+                self.root.iconphoto(True, self._icon_photo)
             except tk.TclError:
                 pass
 
