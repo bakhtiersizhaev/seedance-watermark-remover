@@ -27,7 +27,7 @@ except ImportError:
     TkinterDnD = None
 
 APP_NAME = "Seedance Watermark Remover"
-APP_VERSION = "1.1.0"
+APP_VERSION = "1.1.1"
 GITHUB_URL = "https://github.com/bakhtiersizhaev/seedance-watermark-remover"
 TELEGRAM_CHANNEL_URL = "https://t.me/ai2key"
 TELEGRAM_AUTHOR_URL = "https://t.me/bakhtier_sizhaev"
