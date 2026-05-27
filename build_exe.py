@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -206,7 +207,11 @@ def validate_release_zip(zip_path: Path) -> None:
         raise SystemExit("Release ZIP contains forbidden entries:\n" + "\n".join(sorted(set(forbidden))[:50]))
 
 
-def verify_extracted_zip(zip_path: Path) -> None:
+def skip_frozen_process_smoke() -> bool:
+    return os.environ.get("SEEDANCE_SKIP_FROZEN_PROCESS_SMOKE") == "1"
+
+
+def verify_extracted_zip(zip_path: Path, *, run_process_smoke: bool = True) -> None:
     with tempfile.TemporaryDirectory(prefix="seedance_release_extract_") as tmp:
         extract_root = Path(tmp)
         with zipfile.ZipFile(zip_path) as archive:
@@ -215,7 +220,10 @@ def verify_extracted_zip(zip_path: Path) -> None:
         validate_app_folder(app_dir)
         exe = app_dir / f"{APP_NAME}.exe"
         run([str(exe), "--self-test"], cwd=app_dir)
-        run([str(exe), "--smoke-process"], cwd=app_dir)
+        if run_process_smoke:
+            run([str(exe), "--smoke-process"], cwd=app_dir)
+        else:
+            print("Skipping extracted frozen processing smoke because SEEDANCE_SKIP_FROZEN_PROCESS_SMOKE=1")
 
 
 def main() -> int:
@@ -231,12 +239,16 @@ def main() -> int:
     copy_visible_docs(app_dir)
     validate_app_folder(app_dir)
 
+    run_frozen_smoke = not skip_frozen_process_smoke()
     run([str(exe), "--self-test"], cwd=app_dir)
-    run([str(exe), "--smoke-process"], cwd=app_dir)
+    if run_frozen_smoke:
+        run([str(exe), "--smoke-process"], cwd=app_dir)
+    else:
+        print("Skipping direct frozen processing smoke because SEEDANCE_SKIP_FROZEN_PROCESS_SMOKE=1")
 
     zip_path = create_release_zip(app_dir)
     validate_release_zip(zip_path)
-    verify_extracted_zip(zip_path)
+    verify_extracted_zip(zip_path, run_process_smoke=run_frozen_smoke)
 
     print(f"\nBuilt app folder: {app_dir}")
     print(f"Built release ZIP: {zip_path}")

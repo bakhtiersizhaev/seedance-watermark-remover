@@ -31,7 +31,7 @@ except ImportError:
     TkinterDnD = None
 
 APP_NAME = "Seedance Watermark Remover"
-APP_VERSION = "1.2.0"
+APP_VERSION = "1.2.1"
 GITHUB_URL = "https://github.com/bakhtiersizhaev/seedance-watermark-remover"
 GITHUB_RELEASES_URL = f"{GITHUB_URL}/releases"
 GITHUB_LATEST_RELEASE_API = "https://api.github.com/repos/bakhtiersizhaev/seedance-watermark-remover/releases/latest"
