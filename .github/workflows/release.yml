@@ -18,7 +18,6 @@ env:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
   PYTHONIOENCODING: "utf-8"
   PYTHONUTF8: "1"
-  SEEDANCE_SKIP_FROZEN_PROCESS_SMOKE: "1"
 
 jobs:
   build-windows-portable:
@@ -38,7 +37,13 @@ jobs:
 
       - name: Install ffmpeg
         shell: pwsh
-        run: choco install ffmpeg -y --no-progress
+        run: |
+          choco install ffmpeg -y --no-progress
+          $realFfmpeg = "C:\ProgramData\chocolatey\lib\ffmpeg\tools\ffmpeg\bin\ffmpeg.exe"
+          if (!(Test-Path $realFfmpeg)) {
+            throw "Real ffmpeg binary was not found at $realFfmpeg"
+          }
+          "FFMPEG_PATH=$realFfmpeg" | Out-File -FilePath $env:GITHUB_ENV -Append
 
       - name: Install Python dependencies
         shell: pwsh
