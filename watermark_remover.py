@@ -206,8 +206,8 @@ def _auto_detect_gemini(frames, mean_frame, width, height):
     stack = np.stack(frames, axis=0)
     std_map = np.std(stack, axis=0).mean(axis=2)
     shorter_side = min(width, height)
-    search_left = int(width * 0.55)
-    search_top = int(height * 0.58)
+    search_left = int(width * 0.62)
+    search_top = int(height * 0.62)
     roi = mean_frame[search_top:height, search_left:width]
     if roi.size == 0:
         return None
@@ -219,7 +219,7 @@ def _auto_detect_gemini(frames, mean_frame, width, height):
     value = hsv[:, :, 2]
     saturation = hsv[:, :, 1]
     raw = np.where(
-        ((value >= 150) & (saturation <= 95) & (bright_delta >= 6)) | ((value >= 205) & (saturation <= 75)),
+        ((value >= 120) & (saturation <= 135) & (bright_delta >= 2)) | ((value >= 190) & (saturation <= 95)),
         255,
         0,
     )
@@ -230,9 +230,11 @@ def _auto_detect_gemini(frames, mean_frame, width, height):
 
     count, labels, stats, centroids = cv2.connectedComponentsWithStats(raw)
     min_box = max(18, int(shorter_side * 0.025))
-    max_box = max(70, int(shorter_side * 0.15))
-    min_area = max(80, int(shorter_side * shorter_side * 0.00012))
+    min_area = max(45, int(shorter_side * shorter_side * 0.00008))
     max_area = max(5000, int(shorter_side * shorter_side * 0.018))
+    max_box = max(62, int(shorter_side * 0.09))
+    target_box = max(34.0, shorter_side * 0.058)
+    target_area = target_box * target_box
     best_region, best_score = None, 0.0
 
     for component_id in range(1, count):
@@ -255,11 +257,15 @@ def _auto_detect_gemini(frames, mean_frame, width, height):
         abs_y = search_top + y
         abs_cx = search_left + float(center_x)
         abs_cy = search_top + float(center_y)
+        if abs_cx < width * 0.72 or abs_cy < height * 0.70:
+            continue
         component_std = float(std_map[abs_y : abs_y + h, abs_x : abs_x + w].mean())
         stability = 1.0 / (1.0 + component_std)
-        corner_bias = (abs_cx / width) * (abs_cy / height)
+        corner_bias = (abs_cx / width) ** 8.0 * (abs_cy / height) ** 2.0
         compactness = 1.0 - min(1.0, abs(1.0 - aspect) * 0.45)
-        score = area * stability * corner_bias * compactness * (0.35 + fill_ratio)
+        size_score = target_box / (target_box + abs(w - target_box) + abs(h - target_box))
+        area_score = target_area / (target_area + abs(area - target_area))
+        score = stability * corner_bias * compactness * size_score * (0.45 + area_score) * (0.2 + fill_ratio)
         if score <= best_score:
             continue
 
@@ -312,7 +318,7 @@ def _build_gemini_mask(mean_frame_bgr, region_xywh, frame_shape):
     value = hsv[:, :, 2]
     saturation = hsv[:, :, 1]
     mask_roi = np.where(
-        ((value >= 145) & (saturation <= 105) & (bright_delta >= 5)) | ((value >= 198) & (saturation <= 85)),
+        ((value >= 120) & (saturation <= 140) & (bright_delta >= 2)) | ((value >= 190) & (saturation <= 100)),
         255,
         0,
     ).astype(np.uint8)
