@@ -12,12 +12,13 @@ import subprocess
 import sys
 import threading
 import tkinter as tk
+import webbrowser
 from pathlib import Path
 from tkinter import filedialog, messagebox
 
 import customtkinter as ctk
 
-from watermark_remover import remove_watermark
+from watermark_remover import WATERMARK_GEMINI, WATERMARK_SEEDANCE, remove_watermark
 
 try:
     from tkinterdnd2 import DND_FILES, TkinterDnD
@@ -26,6 +27,10 @@ except ImportError:
     TkinterDnD = None
 
 APP_NAME = "Seedance Watermark Remover"
+APP_VERSION = "1.1.0"
+GITHUB_URL = "https://github.com/bakhtiersizhaev/seedance-watermark-remover"
+TELEGRAM_CHANNEL_URL = "https://t.me/ai2key"
+TELEGRAM_AUTHOR_URL = "https://t.me/bakhtier_sizhaev"
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"}
 
 WINDOW_BG = "#080d14"
@@ -42,7 +47,7 @@ DANGER = "#ff6b6b"
 BORDER = "#263447"
 
 PREFERRED_WINDOW_WIDTH = 900
-PREFERRED_WINDOW_HEIGHT = 820
+PREFERRED_WINDOW_HEIGHT = 900
 MIN_WINDOW_WIDTH = 760
 MIN_WINDOW_HEIGHT = 760
 SCREEN_MARGIN = 48
@@ -87,6 +92,7 @@ UI_TEXT = {
         "app_title": "Seedance Cleaner",
         "subtitle": "Remove small video watermarks locally. No upload, no account, no external service.",
         "language_label": "Language",
+        "version": "Version {version}",
         "drop_title": "Drop video here",
         "drop_subtitle": "or paste a copied video with Ctrl+V",
         "browse": "Browse video",
@@ -96,6 +102,10 @@ UI_TEXT = {
         "output_empty": "Output will be created next to the input video.",
         "manual_region": "Manual region",
         "region_placeholder": "x,y,w,h — empty = auto-detect",
+        "watermark_types": "Watermarks to remove",
+        "seedance_type": "Seedance",
+        "gemini_type": "Gemini sparkle",
+        "no_watermark_type": "Select at least one watermark type.",
         "open_result_folder": "Open result folder",
         "remove": "Remove watermark",
         "processing": "Processing...",
@@ -118,11 +128,15 @@ UI_TEXT = {
         "done": "Done. Clean video is ready.",
         "failed": "Failed. Check the log; try manual region if auto-detection failed.",
         "inpainting": "Inpainting frames {current}/{total}...",
+        "made_by": "GitHub, made by Bakhtier Sizhaev",
+        "telegram_channel": "Telegram channel: ai2key",
+        "telegram_contact": "Author contact: bakhtier_sizhaev",
     },
     "ru": {
         "app_title": "Seedance Cleaner",
         "subtitle": "Удаляет небольшие водяные знаки локально. Без загрузки, аккаунта и внешнего сервиса.",
         "language_label": "Язык",
+        "version": "Версия {version}",
         "drop_title": "Перетащите видео сюда",
         "drop_subtitle": "или вставьте скопированное видео через Ctrl+V",
         "browse": "Выбрать видео",
@@ -132,6 +146,10 @@ UI_TEXT = {
         "output_empty": "Готовое видео будет создано рядом с исходным файлом.",
         "manual_region": "Область вручную",
         "region_placeholder": "x,y,w,h — пусто = автоопределение",
+        "watermark_types": "Какие водяные знаки удалять",
+        "seedance_type": "Seedance",
+        "gemini_type": "Gemini звезда",
+        "no_watermark_type": "Выберите хотя бы один тип водяного знака.",
         "open_result_folder": "Открыть папку",
         "remove": "Удалить водяной знак",
         "processing": "Обработка...",
@@ -154,11 +172,15 @@ UI_TEXT = {
         "done": "Готово. Очищенное видео создано.",
         "failed": "Ошибка. Проверьте лог; если автоопределение не помогло, задайте область вручную.",
         "inpainting": "Обработка кадров {current}/{total}...",
+        "made_by": "GitHub, сделано Bakhtier Sizhaev",
+        "telegram_channel": "Telegram-канал: ai2key",
+        "telegram_contact": "Контакт автора: bakhtier_sizhaev",
     },
     "zh": {
         "app_title": "Seedance Cleaner",
         "subtitle": "在本机移除小型视频水印。无需上传、账号或外部服务。",
         "language_label": "语言",
+        "version": "版本 {version}",
         "drop_title": "将视频拖到这里",
         "drop_subtitle": "或用 Ctrl+V 粘贴已复制的视频",
         "browse": "选择视频",
@@ -168,6 +190,10 @@ UI_TEXT = {
         "output_empty": "处理后的视频会创建在原视频旁边。",
         "manual_region": "手动区域",
         "region_placeholder": "x,y,w,h — 留空 = 自动检测",
+        "watermark_types": "要移除的水印",
+        "seedance_type": "Seedance",
+        "gemini_type": "Gemini 星形标记",
+        "no_watermark_type": "请至少选择一种水印类型。",
         "open_result_folder": "打开结果文件夹",
         "remove": "移除水印",
         "processing": "处理中...",
@@ -190,6 +216,9 @@ UI_TEXT = {
         "done": "完成。已创建清理后的视频。",
         "failed": "失败。请查看日志；如果自动检测失败，请尝试手动区域。",
         "inpainting": "正在处理帧 {current}/{total}...",
+        "made_by": "GitHub，由 Bakhtier Sizhaev 制作",
+        "telegram_channel": "Telegram 频道：ai2key",
+        "telegram_contact": "作者联系方式：bakhtier_sizhaev",
     },
 }
 
@@ -258,6 +287,8 @@ class SeedanceApp:
         self.input_path = tk.StringVar()
         self.output_dir = tk.StringVar()
         self.region = tk.StringVar()
+        self.remove_seedance = tk.BooleanVar(value=True)
+        self.remove_gemini = tk.BooleanVar(value=False)
         self.status = tk.StringVar(value=self._text("ready"))
         self.progress_label = tk.StringVar(value="")
         self.output_preview = tk.StringVar(value=self._text("output_empty"))
@@ -294,7 +325,7 @@ class SeedanceApp:
         shell = ctk.CTkFrame(self.root, fg_color=WINDOW_BG, corner_radius=0)
         shell.grid(row=0, column=0, sticky="nsew", padx=16, pady=14)
         shell.grid_columnconfigure(0, weight=1)
-        shell.grid_rowconfigure(6, weight=1)
+        shell.grid_rowconfigure(7, weight=1)
 
         header = ctk.CTkFrame(shell, fg_color="transparent")
         header.grid(row=0, column=0, sticky="ew")
@@ -353,6 +384,13 @@ class SeedanceApp:
             font=ctk.CTkFont(size=12, weight="bold"),
         )
         self.language_menu.pack(anchor="e")
+        self.version_label = ctk.CTkLabel(
+            language_box,
+            text=self._text("version", version=APP_VERSION),
+            text_color=SUBTLE,
+            font=ctk.CTkFont(size=11),
+        )
+        self.version_label.pack(anchor="e", pady=(5, 0))
 
         self.drop = ctk.CTkFrame(
             shell, height=124, fg_color=CARD_BG, corner_radius=20, border_width=1, border_color=BORDER
@@ -417,8 +455,35 @@ class SeedanceApp:
             justify="left",
         )
         self.output_preview_label.grid(row=1, column=0, columnspan=2, sticky="ew", padx=18, pady=(0, 10))
+        self.types_section_label = self._section_label(settings, self._text("watermark_types"))
+        self.types_section_label.grid(row=2, column=0, sticky="w", padx=18)
+        provider_row = ctk.CTkFrame(settings, fg_color="transparent")
+        provider_row.grid(row=3, column=0, columnspan=2, sticky="ew", padx=18, pady=(7, 10))
+        self.seedance_checkbox = ctk.CTkCheckBox(
+            provider_row,
+            text=self._text("seedance_type"),
+            variable=self.remove_seedance,
+            fg_color=ACCENT,
+            hover_color=ACCENT_HOVER,
+            border_color=BORDER,
+            text_color=MUTED,
+            font=ctk.CTkFont(size=12),
+        )
+        self.seedance_checkbox.pack(side="left", padx=(0, 18))
+        self.gemini_checkbox = ctk.CTkCheckBox(
+            provider_row,
+            text=self._text("gemini_type"),
+            variable=self.remove_gemini,
+            fg_color=ACCENT,
+            hover_color=ACCENT_HOVER,
+            border_color=BORDER,
+            text_color=MUTED,
+            font=ctk.CTkFont(size=12),
+        )
+        self.gemini_checkbox.pack(side="left")
+
         self.region_section_label = self._section_label(settings, self._text("manual_region"))
-        self.region_section_label.grid(row=2, column=0, sticky="w", padx=18)
+        self.region_section_label.grid(row=4, column=0, sticky="w", padx=18)
         self.region_entry = ctk.CTkEntry(
             settings,
             textvariable=self.region,
@@ -432,7 +497,7 @@ class SeedanceApp:
             font=ctk.CTkFont(family="Cascadia Mono", size=13),
             height=40,
         )
-        self.region_entry.grid(row=3, column=0, sticky="ew", padx=18, pady=(7, 14))
+        self.region_entry.grid(row=5, column=0, sticky="ew", padx=18, pady=(7, 14))
         self.open_done_checkbox = ctk.CTkCheckBox(
             settings,
             text=self._text("open_result_folder"),
@@ -443,7 +508,7 @@ class SeedanceApp:
             text_color=MUTED,
             font=ctk.CTkFont(size=12),
         )
-        self.open_done_checkbox.grid(row=3, column=1, sticky="w", padx=(10, 18), pady=(7, 14))
+        self.open_done_checkbox.grid(row=5, column=1, sticky="w", padx=(10, 18), pady=(7, 14))
 
         self.run_btn = self._button(shell, self._text("remove"), self.start, secondary=False)
         self.run_btn.grid(row=4, column=0, sticky="ew", pady=(0, 8))
@@ -475,8 +540,18 @@ class SeedanceApp:
             font=ctk.CTkFont(family="Cascadia Mono", size=11),
             wrap="word",
         )
-        self.log.grid(row=6, column=0, sticky="nsew")
+        self.log.grid(row=7, column=0, sticky="nsew")
         self.log.configure(state="disabled")
+        footer = ctk.CTkFrame(shell, fg_color="transparent")
+        footer.grid(row=8, column=0, sticky="ew", pady=(8, 0))
+        for column in range(3):
+            footer.grid_columnconfigure(column, weight=1, uniform="footer")
+        self.github_link = self._link_label(footer, self._text("made_by"), GITHUB_URL)
+        self.github_link.grid(row=0, column=0, sticky="w")
+        self.telegram_channel_link = self._link_label(footer, self._text("telegram_channel"), TELEGRAM_CHANNEL_URL)
+        self.telegram_channel_link.grid(row=0, column=1)
+        self.telegram_contact_link = self._link_label(footer, self._text("telegram_contact"), TELEGRAM_AUTHOR_URL)
+        self.telegram_contact_link.grid(row=0, column=2, sticky="e")
         self._log(self._text("ready_log"))
         self._resize_text_wraps()
 
@@ -484,15 +559,22 @@ class SeedanceApp:
         self.title_label.configure(text=self._text("app_title"))
         self.subtitle_label.configure(text=self._text("subtitle"))
         self.language_label.configure(text=self._text("language_label"))
+        self.version_label.configure(text=self._text("version", version=APP_VERSION))
         self.drop_title_label.configure(text=self._text("drop_title"))
         self.drop_subtitle_label.configure(text=self._text("drop_subtitle"))
         self.browse_btn.configure(text=self._text("browse"))
         self.paste_btn.configure(text=self._text("paste"))
         self.output_btn.configure(text=self._text("choose_output"))
         self.output_section_label.configure(text=self._text("output_label"))
+        self.types_section_label.configure(text=self._text("watermark_types"))
+        self.seedance_checkbox.configure(text=self._text("seedance_type"))
+        self.gemini_checkbox.configure(text=self._text("gemini_type"))
         self.region_section_label.configure(text=self._text("manual_region"))
         self.region_entry.configure(placeholder_text=self._text("region_placeholder"))
         self.open_done_checkbox.configure(text=self._text("open_result_folder"))
+        self.github_link.configure(text=self._text("made_by"))
+        self.telegram_channel_link.configure(text=self._text("telegram_channel"))
+        self.telegram_contact_link.configure(text=self._text("telegram_contact"))
         self.run_btn.configure(text=self._text("processing") if self.busy else self._text("remove"))
         if not self.input_path.get():
             self.output_preview.set(self._text("output_empty"))
@@ -528,6 +610,17 @@ class SeedanceApp:
             height=34,
             font=ctk.CTkFont(size=12, weight="bold"),
         )
+
+    def _link_label(self, parent: tk.Widget, text: str, url: str) -> ctk.CTkLabel:
+        label = ctk.CTkLabel(
+            parent,
+            text=text,
+            text_color=ACCENT,
+            font=ctk.CTkFont(size=11, underline=True),
+            cursor="hand2",
+        )
+        label.bind("<Button-1>", lambda _event: webbrowser.open(url))
+        return label
 
     def _drop(self, event) -> None:
         self._pick_first(parse_drop_paths(self.root, event.data))
@@ -595,6 +688,10 @@ class SeedanceApp:
         if self.region.get().strip() and region is None:
             self._status(self._text("invalid_region"), DANGER)
             return
+        watermark_types = self._selected_watermark_types()
+        if not watermark_types:
+            self._status(self._text("no_watermark_type"), DANGER)
+            return
         ffmpeg = find_ffmpeg()
         if not ffmpeg:
             messagebox.showerror(APP_NAME, self._text("ffmpeg_missing"))
@@ -613,16 +710,37 @@ class SeedanceApp:
         self._status(self._text("processing_status"), ACCENT)
         self._log(f"Output: {output_path}")
         self._log(f"Using ffmpeg: {ffmpeg}")
-        threading.Thread(target=self._worker, args=(input_path, output_path, region), daemon=True).start()
+        self._log(f"Watermark types: {', '.join(watermark_types)}")
+        threading.Thread(
+            target=self._worker,
+            args=(input_path, output_path, region, watermark_types),
+            daemon=True,
+        ).start()
 
-    def _worker(self, input_path: Path, output_path: Path, region: tuple[int, int, int, int] | None) -> None:
+    def _worker(
+        self,
+        input_path: Path,
+        output_path: Path,
+        region: tuple[int, int, int, int] | None,
+        watermark_types: tuple[str, ...],
+    ) -> None:
         writer = QueueWriter(self.events)
         try:
             with contextlib.redirect_stdout(writer), contextlib.redirect_stderr(writer):
-                ok = remove_watermark(str(input_path), str(output_path), manual_region=region)
+                ok = remove_watermark(
+                    str(input_path), str(output_path), manual_region=region, watermark_types=watermark_types
+                )
             self.events.put(("done", ok, str(output_path)))
         except Exception as exc:
             self.events.put(("error", repr(exc)))
+
+    def _selected_watermark_types(self) -> tuple[str, ...]:
+        selected = []
+        if self.remove_gemini.get():
+            selected.append(WATERMARK_GEMINI)
+        if self.remove_seedance.get():
+            selected.append(WATERMARK_SEEDANCE)
+        return tuple(selected)
 
     def _drain(self) -> None:
         try:

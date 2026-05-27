@@ -13,8 +13,40 @@ import tempfile
 import cv2
 import numpy as np
 
+WATERMARK_SEEDANCE = "seedance"
+WATERMARK_GEMINI = "gemini"
+WATERMARK_TYPES = (WATERMARK_SEEDANCE, WATERMARK_GEMINI)
 
-def _auto_detect(frames, mean_frame, width, height):
+
+def _normalize_watermark_types(watermark_types=None):
+    if watermark_types is None:
+        return (WATERMARK_SEEDANCE,)
+    if isinstance(watermark_types, str):
+        watermark_types = (watermark_types,)
+    normalized = tuple(dict.fromkeys(str(item).lower() for item in watermark_types))
+    invalid = [item for item in normalized if item not in WATERMARK_TYPES]
+    if invalid:
+        raise ValueError(f"Unsupported watermark type: {', '.join(invalid)}")
+    return normalized or (WATERMARK_SEEDANCE,)
+
+
+def _auto_detect(frames, mean_frame, width, height, watermark_types=None):
+    detected = _auto_detect_with_type(frames, mean_frame, width, height, watermark_types)
+    return detected[0] if detected else None
+
+
+def _auto_detect_with_type(frames, mean_frame, width, height, watermark_types=None):
+    for watermark_type in _normalize_watermark_types(watermark_types):
+        if watermark_type == WATERMARK_GEMINI:
+            region = _auto_detect_gemini(frames, mean_frame, width, height)
+        else:
+            region = _auto_detect_seedance(frames, mean_frame, width, height)
+        if region is not None:
+            return region, watermark_type
+    return None
+
+
+def _auto_detect_seedance(frames, mean_frame, width, height):
     """
     Scan the four corners for a static watermark.
 
@@ -114,7 +146,86 @@ def _auto_detect(frames, mean_frame, width, height):
     return best
 
 
-def _build_mask(mean_frame_bgr, region_xywh, frame_shape):
+def _auto_detect_gemini(frames, mean_frame, width, height):
+    """Find a small bright sparkle-style logo near the lower-right video area."""
+    stack = np.stack(frames, axis=0)
+    std_map = np.std(stack, axis=0).mean(axis=2)
+    shorter_side = min(width, height)
+    search_left = int(width * 0.55)
+    search_top = int(height * 0.58)
+    roi = mean_frame[search_top:height, search_left:width]
+    if roi.size == 0:
+        return None
+
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    background = cv2.GaussianBlur(gray, (0, 0), sigmaX=max(9, shorter_side * 0.018))
+    bright_delta = cv2.subtract(gray, background)
+    value = hsv[:, :, 2]
+    saturation = hsv[:, :, 1]
+    raw = np.where(
+        ((value >= 150) & (saturation <= 95) & (bright_delta >= 6)) | ((value >= 205) & (saturation <= 75)),
+        255,
+        0,
+    )
+    raw = raw.astype(np.uint8)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    raw = cv2.morphologyEx(raw, cv2.MORPH_CLOSE, kernel, iterations=1)
+    raw = cv2.morphologyEx(raw, cv2.MORPH_OPEN, kernel, iterations=1)
+
+    count, labels, stats, centroids = cv2.connectedComponentsWithStats(raw)
+    min_box = max(18, int(shorter_side * 0.025))
+    max_box = max(70, int(shorter_side * 0.15))
+    min_area = max(80, int(shorter_side * shorter_side * 0.00012))
+    max_area = max(5000, int(shorter_side * shorter_side * 0.018))
+    best_region, best_score = None, 0.0
+
+    for component_id in range(1, count):
+        area = int(stats[component_id, cv2.CC_STAT_AREA])
+        x = int(stats[component_id, cv2.CC_STAT_LEFT])
+        y = int(stats[component_id, cv2.CC_STAT_TOP])
+        w = int(stats[component_id, cv2.CC_STAT_WIDTH])
+        h = int(stats[component_id, cv2.CC_STAT_HEIGHT])
+        if area < min_area or area > max_area or w < min_box or h < min_box or w > max_box or h > max_box:
+            continue
+        aspect = w / max(1, h)
+        if not 0.45 <= aspect <= 1.75:
+            continue
+        fill_ratio = area / max(1, w * h)
+        if not 0.12 <= fill_ratio <= 0.75:
+            continue
+
+        center_x, center_y = centroids[component_id]
+        abs_x = search_left + x
+        abs_y = search_top + y
+        abs_cx = search_left + float(center_x)
+        abs_cy = search_top + float(center_y)
+        component_std = float(std_map[abs_y : abs_y + h, abs_x : abs_x + w].mean())
+        stability = 1.0 / (1.0 + component_std)
+        corner_bias = (abs_cx / width) * (abs_cy / height)
+        compactness = 1.0 - min(1.0, abs(1.0 - aspect) * 0.45)
+        score = area * stability * corner_bias * compactness * (0.35 + fill_ratio)
+        if score <= best_score:
+            continue
+
+        pad = max(18, int(shorter_side * 0.025))
+        region_x = max(0, abs_x - pad)
+        region_y = max(0, abs_y - pad)
+        region_w = min(width - region_x, w + 2 * pad)
+        region_h = min(height - region_y, h + 2 * pad)
+        best_score = score
+        best_region = (region_x, region_y, region_w, region_h)
+
+    return best_region
+
+
+def _build_mask(mean_frame_bgr, region_xywh, frame_shape, watermark_type=WATERMARK_SEEDANCE):
+    if watermark_type == WATERMARK_GEMINI:
+        return _build_gemini_mask(mean_frame_bgr, region_xywh, frame_shape)
+    return _build_seedance_mask(mean_frame_bgr, region_xywh, frame_shape)
+
+
+def _build_seedance_mask(mean_frame_bgr, region_xywh, frame_shape):
     """Build a sparse text mask using Canny edges from the mean frame."""
     x, y, w, h = region_xywh
     frame_height, frame_width = frame_shape[:2]
@@ -134,12 +245,50 @@ def _build_mask(mean_frame_bgr, region_xywh, frame_shape):
     return mask
 
 
+def _build_gemini_mask(mean_frame_bgr, region_xywh, frame_shape):
+    """Build a filled mask for bright translucent sparkle logos."""
+    x, y, w, h = region_xywh
+    frame_height, frame_width = frame_shape[:2]
+    roi = mean_frame_bgr[y : y + h, x : x + w]
+    hsv = cv2.cvtColor(roi, cv2.COLOR_BGR2HSV)
+    gray = cv2.cvtColor(roi, cv2.COLOR_BGR2GRAY)
+    background = cv2.GaussianBlur(gray, (0, 0), sigmaX=max(7, min(w, h) * 0.10))
+    bright_delta = cv2.subtract(gray, background)
+    value = hsv[:, :, 2]
+    saturation = hsv[:, :, 1]
+    mask_roi = np.where(
+        ((value >= 145) & (saturation <= 105) & (bright_delta >= 5)) | ((value >= 198) & (saturation <= 85)),
+        255,
+        0,
+    ).astype(np.uint8)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))
+    mask_roi = cv2.morphologyEx(mask_roi, cv2.MORPH_CLOSE, kernel, iterations=2)
+    mask_roi = cv2.morphologyEx(mask_roi, cv2.MORPH_OPEN, kernel, iterations=1)
+
+    component_count, labels, stats, _ = cv2.connectedComponentsWithStats(mask_roi)
+    clean = np.zeros_like(mask_roi)
+    min_area = max(45, int(min(w, h) * min(w, h) * 0.01))
+    for component_id in range(1, component_count):
+        area = int(stats[component_id, cv2.CC_STAT_AREA])
+        comp_w = int(stats[component_id, cv2.CC_STAT_WIDTH])
+        comp_h = int(stats[component_id, cv2.CC_STAT_HEIGHT])
+        if area >= min_area and comp_w >= 8 and comp_h >= 8:
+            clean[labels == component_id] = 255
+    if clean.sum() == 0:
+        clean = mask_roi
+    clean = cv2.dilate(clean, kernel, iterations=2)
+
+    mask = np.zeros((frame_height, frame_width), dtype=np.uint8)
+    mask[y : y + h, x : x + w] = clean
+    return mask
+
+
 def _inpaint_telea(frame_bgr, mask):
     """Fast OpenCV TELEA inpainting."""
     return cv2.inpaint(frame_bgr, mask, inpaintRadius=5, flags=cv2.INPAINT_TELEA)
 
 
-def remove_watermark(input_path, output_path, manual_region=None):
+def remove_watermark(input_path, output_path, manual_region=None, watermark_types=None):
     cap = cv2.VideoCapture(input_path)
     total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     fps = cap.get(cv2.CAP_PROP_FPS)
@@ -165,19 +314,22 @@ def remove_watermark(input_path, output_path, manual_region=None):
 
     mean_frame = np.mean(np.stack(sample_frames), axis=0).astype(np.uint8)
 
+    selected_types = _normalize_watermark_types(watermark_types)
     if manual_region:
         x, y, w, h = manual_region
+        watermark_type = selected_types[0]
         print(f"Using manual region: x={x} y={y} w={w} h={h}")
     else:
-        region = _auto_detect(sample_frames, mean_frame, width, height)
-        if region is None:
+        detected = _auto_detect_with_type(sample_frames, mean_frame, width, height, selected_types)
+        if detected is None:
             print("Error: auto-detection failed. Try -r x,y,w,h to specify the region manually.")
             cap.release()
             return False
+        region, watermark_type = detected
         x, y, w, h = region
-        print(f"Detected watermark region: x={x} y={y} w={w} h={h}")
+        print(f"Detected {watermark_type} watermark region: x={x} y={y} w={w} h={h}")
 
-    mask = _build_mask(mean_frame, (x, y, w, h), (height, width))
+    mask = _build_mask(mean_frame, (x, y, w, h), (height, width), watermark_type)
     print(f"Mask: {int(mask.sum() // 255)} pixels")
 
     frames_dir = tempfile.mkdtemp(prefix="seedance_wm_")
@@ -251,13 +403,19 @@ def parse_region(value):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Remove Seedance 2.0 'AI生成' watermark from videos.")
+    parser = argparse.ArgumentParser(description="Remove small static corner watermarks from videos.")
     parser.add_argument("input", help="Input video file")
     parser.add_argument("-o", "--output", help="Output path (default: <input>_clean.mp4)")
     parser.add_argument(
         "-r",
         "--region",
         help="Manual watermark region as x,y,w,h — skips auto-detection",
+    )
+    parser.add_argument(
+        "--type",
+        action="append",
+        choices=WATERMARK_TYPES,
+        help="Watermark type to remove. Can be repeated. Default: seedance",
     )
     args = parser.parse_args()
 
@@ -274,7 +432,7 @@ def main():
             print("Error: --region must be four comma-separated integers: x,y,w,h")
             sys.exit(1)
 
-    ok = remove_watermark(args.input, output, manual_region=region)
+    ok = remove_watermark(args.input, output, manual_region=region, watermark_types=args.type)
     sys.exit(0 if ok else 1)
 
 

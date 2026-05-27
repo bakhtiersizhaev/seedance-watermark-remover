@@ -16,7 +16,7 @@ from seedance_gui import (
     normalize_path,
     parse_region,
 )
-from watermark_remover import _auto_detect
+from watermark_remover import WATERMARK_GEMINI, _auto_detect
 
 
 def absolute_widget_bottom(widget, root) -> int:
@@ -44,7 +44,7 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
 
     def test_choose_window_size_uses_vertical_desktop_window_without_fullscreen(self) -> None:
         width, height, min_width, min_height = choose_window_size(1920, 1080)
-        self.assertEqual((width, height), (900, 820))
+        self.assertEqual((width, height), (900, 900))
         self.assertEqual((min_width, min_height), (760, 760))
 
     def test_build_centered_geometry_clamps_to_small_screen(self) -> None:
@@ -133,6 +133,34 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
         self.assertLessEqual(y, 20)
         self.assertGreaterEqual(w, 30)
         self.assertGreaterEqual(h, 20)
+
+    def test_gemini_auto_detect_finds_bottom_right_sparkle_on_portrait_video(self) -> None:
+        width, height = 540, 960
+        frames = []
+        for _ in range(8):
+            frame = np.full((height, width, 3), (90, 112, 126), dtype=np.uint8)
+            cv2.rectangle(frame, (480, 600), (535, 760), (230, 230, 230), -1)
+            center = (430, 850)
+            cv2.drawMarker(
+                frame,
+                center,
+                (242, 242, 242),
+                markerType=cv2.MARKER_STAR,
+                markerSize=52,
+                thickness=5,
+                line_type=cv2.LINE_AA,
+            )
+            frames.append(frame.astype(np.float32))
+
+        mean_frame = np.mean(np.stack(frames), axis=0).astype(np.uint8)
+        detected = _auto_detect(frames, mean_frame, width, height, (WATERMARK_GEMINI,))
+
+        self.assertIsNotNone(detected)
+        x, y, w, h = detected
+        self.assertLessEqual(x, center[0])
+        self.assertLessEqual(y, center[1])
+        self.assertGreaterEqual(x + w, center[0])
+        self.assertGreaterEqual(y + h, center[1])
 
 
 if __name__ == "__main__":

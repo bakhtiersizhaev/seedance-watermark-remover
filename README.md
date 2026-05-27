@@ -8,9 +8,9 @@
 
 **Offline Windows app for removing small static corner watermarks locally.**
 
-[![Download Windows ZIP](https://img.shields.io/badge/Download-Windows%20ZIP-58a6ff?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.0.1/SeedanceWatermarkRemover-Windows-x64-portable.zip)
+[![Download Windows ZIP](https://img.shields.io/badge/Download-Windows%20ZIP-58a6ff?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.1.0/SeedanceWatermarkRemover-Windows-x64-portable.zip)
 [![GitHub Pages](https://img.shields.io/badge/Website-GitHub%20Pages-7c5cff?style=for-the-badge)](https://bakhtiersizhaev.github.io/seedance-watermark-remover/)
-[![Release](https://img.shields.io/badge/Release-v1.0.1-5ee2a0?style=for-the-badge)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/tag/v1.0.1)
+[![Release](https://img.shields.io/badge/Release-v1.1.0-5ee2a0?style=for-the-badge)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/tag/v1.1.0)
 
 **Language:** [English](https://bakhtiersizhaev.github.io/seedance-watermark-remover/) · [Русский](https://bakhtiersizhaev.github.io/seedance-watermark-remover/ru.html) · [中文](https://bakhtiersizhaev.github.io/seedance-watermark-remover/zh.html)
 
@@ -20,7 +20,7 @@
 
 **Remove small static corner watermarks from videos locally on Windows.**
 
-Seedance Watermark Remover is a lightweight open-source desktop app by **Baktier Sizhaev**. It helps when you have a video with a small corner badge, text label, logo overlay, or an **"AI生成" / AI-Generated** mark and you want a clean copy without sending the file to an online editor.
+Seedance Watermark Remover is a lightweight open-source desktop app by **Bakhtier Sizhaev**. It helps when you have a video with a small corner badge, text label, Gemini sparkle logo, or an **"AI生成" / AI-Generated** mark and you want a clean copy without sending the file to an online editor.
 
 The app runs on your computer, keeps the original video untouched, and creates a new MP4 output. It uses OpenCV inpainting for practical local cleanup. It is built for small static marks in video corners, not for heavy video restoration or removing large moving objects.
 
@@ -46,9 +46,9 @@ It is useful for creators, editors, testers, and developers who need a quick loc
 
 For most Windows users, use the ready-built portable release asset:
 
-[Download SeedanceWatermarkRemover-Windows-x64-portable.zip](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.0.1/SeedanceWatermarkRemover-Windows-x64-portable.zip)
+[Download SeedanceWatermarkRemover-Windows-x64-portable.zip](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.1.0/SeedanceWatermarkRemover-Windows-x64-portable.zip)
 
-You can also open the [v1.0.1 GitHub Release](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/tag/v1.0.1) if you want checksums or release notes. Extract the ZIP first, open the extracted `SeedanceWatermarkRemover` folder, and run:
+You can also open the [v1.1.0 GitHub Release](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/tag/v1.1.0) if you want checksums or release notes. Extract the ZIP first, open the extracted `SeedanceWatermarkRemover` folder, and run:
 
 ```text
 SeedanceWatermarkRemover.exe
@@ -62,7 +62,7 @@ Windows may show **"Windows protected your PC"** because this is a new unsigned 
 
 This warning is about Windows reputation and code signing, not a confirmed virus finding. The source code, build script, and release checks are public. If you trust this release, click **More info → Run anyway**. You can also verify the downloaded file with SHA256 before running it.
 
-Download [SHA256SUMS.txt](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.0.1/SHA256SUMS.txt) from the release page to verify the portable ZIP and packaged EXE.
+Download [SHA256SUMS.txt](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.1.0/SHA256SUMS.txt) from the release page to verify the portable ZIP and packaged EXE.
 
 For a future larger public release, the right next step is to buy an OV/EV code-signing certificate and sign `SeedanceWatermarkRemover.exe` so Windows shows a verified publisher instead of Unknown publisher.
 
@@ -94,7 +94,7 @@ For a future larger public release, the right next step is to buy an OV/EV code-
 
 1. **Samples frames** so static corner text stays visible while moving content becomes less important.
 2. **Scores corner regions** using edge density and temporal stability.
-3. **Builds a focused mask** around the likely watermark strokes.
+3. **Builds a focused mask** around the likely watermark strokes or sparkle logo fill.
 4. **Inpaints each frame locally** with OpenCV TELEA on CPU.
 5. **Reassembles the video** with ffmpeg and keeps audio where possible.
 
@@ -203,6 +203,9 @@ python watermark_remover.py input.mp4
 # Save to a custom output path
 python watermark_remover.py input.mp4 -o clean.mp4
 
+# Auto-detect a Gemini sparkle watermark
+python watermark_remover.py input.mp4 --type gemini
+
 # Use a manual region if auto-detection fails: x,y,width,height
 python watermark_remover.py input.mp4 -r 10,5,120,60
 ```
@@ -216,6 +219,7 @@ python watermark_remover.py input.mp4 -r 10,5,120,60
 | `input` | Path to input video |
 | `-o`, `--output` | Output file path, default: `<input>_clean.mp4` |
 | `-r`, `--region` | Manual watermark region `x,y,w,h`; skips auto-detection |
+| `--type` | Watermark type to remove: `seedance` or `gemini`; repeat to try multiple types |
 
 ---
 
@@ -264,4 +268,4 @@ The build script verifies the source app, packaged EXE, release folder, release 
 
 ## Authorship and License
 
-MIT © Baktier Sizhaev
+MIT © Bakhtier Sizhaev
