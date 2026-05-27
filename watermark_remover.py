@@ -384,7 +384,7 @@ def remove_watermark(input_path, output_path, manual_region=None, watermark_type
     if ret_code == 0:
         in_mb = os.path.getsize(input_path) / 1024 / 1024
         out_mb = os.path.getsize(output_path) / 1024 / 1024
-        print(f"\nDone.  {in_mb:.1f} MB  →  {out_mb:.1f} MB")
+        print(f"\nDone.  {in_mb:.1f} MB  ->  {out_mb:.1f} MB")
         print(f"Output: {output_path}")
         return True
 

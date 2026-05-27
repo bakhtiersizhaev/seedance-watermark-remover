@@ -13,6 +13,12 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONIOENCODING: "utf-8"
+  PYTHONUTF8: "1"
+
 jobs:
   quality:
     name: Quality checks

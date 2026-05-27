@@ -43,8 +43,13 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
         self.assertEqual(normalize_path("{file:///C:/tmp/video.mp4}"), Path("C:/tmp/video.mp4"))
 
     def test_choose_window_size_uses_vertical_desktop_window_without_fullscreen(self) -> None:
+        width, height, min_width, min_height = choose_window_size(1920, 1440)
+        self.assertEqual((width, height), (900, 1200))
+        self.assertEqual((min_width, min_height), (760, 760))
+
+    def test_choose_window_size_clamps_to_shorter_desktop(self) -> None:
         width, height, min_width, min_height = choose_window_size(1920, 1080)
-        self.assertEqual((width, height), (900, 900))
+        self.assertEqual((width, height), (900, 1032))
         self.assertEqual((min_width, min_height), (760, 760))
 
     def test_build_centered_geometry_clamps_to_small_screen(self) -> None:
@@ -58,6 +63,18 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
             root.update()
             button_bottom = absolute_widget_bottom(app.run_btn, root)
             self.assertLessEqual(button_bottom, root.winfo_height())
+        finally:
+            app.destroy()
+
+    def test_initial_layout_shows_footer_links_on_standard_desktop(self) -> None:
+        app = SeedanceApp(hidden=False)
+        try:
+            root = app.root
+            root.geometry("900x1032+0+0")
+            root.update_idletasks()
+            root.update()
+            footer_bottom = absolute_widget_bottom(app.telegram_contact_link, root)
+            self.assertLessEqual(footer_bottom, root.winfo_height())
         finally:
             app.destroy()
 
