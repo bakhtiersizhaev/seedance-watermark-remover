@@ -18,11 +18,11 @@ Large moving overlays, center-screen marks, and complex transparent objects may 
 
 1. Open `SeedanceWatermarkRemover.exe` from the extracted portable folder.
 2. Add a video by drag-and-drop, Ctrl+V after copying a video file/path, or **Browse video**.
-3. Optionally choose an output folder. By default, the app saves next to the input video as `<name>_clean.mp4`.
+3. Optionally choose an output folder. By default, the app saves next to the input video with a unique name like `<name>_clean_20260527_123456_a1b2c3.mp4`.
 4. Choose the watermark type: **Seedance** for text/badge marks or **Gemini sparkle** for the star logo in the lower-right corner.
 5. Leave **Manual region** empty for auto-detect, or enter `x,y,w,h` if the app should clean a specific area.
 6. Click **Remove watermark** and wait for the progress bar to finish.
-6. Check the new output file. The original video is left untouched.
+7. Check the new output file. The original video is left untouched.
 
 ## When manual region helps
 

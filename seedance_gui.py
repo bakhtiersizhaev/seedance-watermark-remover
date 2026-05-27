@@ -4,6 +4,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import ctypes
+import datetime as dt
 import json
 import os
 import queue
@@ -15,6 +16,7 @@ import tempfile
 import threading
 import tkinter as tk
 import urllib.request
+import uuid
 import webbrowser
 import zipfile
 from pathlib import Path
@@ -31,7 +33,7 @@ except ImportError:
     TkinterDnD = None
 
 APP_NAME = "Seedance Watermark Remover"
-APP_VERSION = "1.2.1"
+APP_VERSION = "1.2.2"
 GITHUB_URL = "https://github.com/bakhtiersizhaev/seedance-watermark-remover"
 GITHUB_RELEASES_URL = f"{GITHUB_URL}/releases"
 GITHUB_LATEST_RELEASE_API = "https://api.github.com/repos/bakhtiersizhaev/seedance-watermark-remover/releases/latest"
@@ -135,9 +137,9 @@ UI_TEXT = {
         "done": "Done. Clean video is ready.",
         "failed": "Failed. Check the log; try manual region if auto-detection failed.",
         "inpainting": "Inpainting frames {current}/{total}...",
-        "made_by": "GitHub, made by Bakhtier Sizhaev",
-        "telegram_channel": "Telegram channel: ai2key",
-        "telegram_contact": "Author contact: bakhtier_sizhaev",
+        "made_by": "GitHub",
+        "telegram_channel": "Channel: ai2key",
+        "telegram_contact": "Contact: bakhtier",
         "check_updates": "Check updates",
         "checking_updates": "Checking updates...",
         "up_to_date": "Up to date",
@@ -191,9 +193,9 @@ UI_TEXT = {
         "done": "Готово. Очищенное видео создано.",
         "failed": "Ошибка. Проверьте лог; если автоопределение не помогло, задайте область вручную.",
         "inpainting": "Обработка кадров {current}/{total}...",
-        "made_by": "GitHub, сделано Bakhtier Sizhaev",
-        "telegram_channel": "Telegram-канал: ai2key",
-        "telegram_contact": "Контакт автора: bakhtier_sizhaev",
+        "made_by": "GitHub",
+        "telegram_channel": "Канал: ai2key",
+        "telegram_contact": "Автор: bakhtier",
         "check_updates": "Проверить обновления",
         "checking_updates": "Проверяю обновления...",
         "up_to_date": "Версия свежая",
@@ -247,9 +249,9 @@ UI_TEXT = {
         "done": "完成。已创建清理后的视频。",
         "failed": "失败。请查看日志；如果自动检测失败，请尝试手动区域。",
         "inpainting": "正在处理帧 {current}/{total}...",
-        "made_by": "GitHub，由 Bakhtier Sizhaev 制作",
-        "telegram_channel": "Telegram 频道：ai2key",
-        "telegram_contact": "作者联系方式：bakhtier_sizhaev",
+        "made_by": "GitHub",
+        "telegram_channel": "频道：ai2key",
+        "telegram_contact": "联系：bakhtier",
         "check_updates": "检查更新",
         "checking_updates": "正在检查更新...",
         "up_to_date": "已是最新版本",
@@ -443,6 +445,7 @@ class SeedanceApp:
         self.language = tk.StringVar(value=DEFAULT_LANGUAGE)
         self.input_path = tk.StringVar()
         self.output_dir = tk.StringVar()
+        self.output_path: Path | None = None
         self.region = tk.StringVar()
         self.remove_seedance = tk.BooleanVar(value=True)
         self.remove_gemini = tk.BooleanVar(value=False)
@@ -711,14 +714,16 @@ class SeedanceApp:
         self.log.configure(state="disabled")
         footer = ctk.CTkFrame(shell, fg_color="transparent")
         footer.grid(row=8, column=0, sticky="ew", pady=(8, 0))
-        for column in range(4):
-            footer.grid_columnconfigure(column, weight=1, uniform="footer")
+        footer.grid_columnconfigure(0, weight=0)
+        footer.grid_columnconfigure(1, weight=0)
+        footer.grid_columnconfigure(2, weight=0)
+        footer.grid_columnconfigure(3, weight=1)
         self.github_link = self._link_label(footer, self._text("made_by"), GITHUB_URL)
-        self.github_link.grid(row=0, column=0, sticky="w")
+        self.github_link.grid(row=0, column=0, sticky="w", padx=(0, 20))
         self.telegram_channel_link = self._link_label(footer, self._text("telegram_channel"), TELEGRAM_CHANNEL_URL)
-        self.telegram_channel_link.grid(row=0, column=1)
+        self.telegram_channel_link.grid(row=0, column=1, sticky="w", padx=(0, 20))
         self.telegram_contact_link = self._link_label(footer, self._text("telegram_contact"), TELEGRAM_AUTHOR_URL)
-        self.telegram_contact_link.grid(row=0, column=2)
+        self.telegram_contact_link.grid(row=0, column=2, sticky="w", padx=(0, 12))
         self.update_btn = ctk.CTkButton(
             footer,
             text=self._text("check_updates"),
@@ -730,7 +735,7 @@ class SeedanceApp:
             border_width=1,
             border_color=BORDER,
             height=26,
-            width=154,
+            width=142,
             font=ctk.CTkFont(size=11, weight="bold"),
         )
         self.update_btn.grid(row=0, column=3, sticky="e")
@@ -770,7 +775,8 @@ class SeedanceApp:
             return
         width = max(MIN_WINDOW_WIDTH, self.root.winfo_width())
         content_width = max(360, width - 120)
-        self.subtitle_label.configure(wraplength=content_width)
+        title_width = max(320, self.title_label.master.winfo_width() - 4)
+        self.subtitle_label.configure(wraplength=title_width)
         self.drop_subtitle_label.configure(wraplength=content_width)
         self.input_path_label.configure(wraplength=content_width)
         self.output_preview_label.configure(wraplength=content_width)
@@ -982,6 +988,7 @@ class SeedanceApp:
         output = build_output_path(
             Path(self.input_path.get()), Path(self.output_dir.get() or Path(self.input_path.get()).parent)
         )
+        self.output_path = output
         self.output_preview.set(str(output))
 
     def start(self) -> None:
@@ -1006,7 +1013,10 @@ class SeedanceApp:
         input_path = Path(self.input_path.get())
         out_dir = Path(self.output_dir.get() or input_path.parent)
         out_dir.mkdir(parents=True, exist_ok=True)
-        output_path = build_output_path(input_path, out_dir)
+        if self.output_path is None or self.output_path.parent != out_dir:
+            self.output_path = build_output_path(input_path, out_dir)
+            self.output_preview.set(str(self.output_path))
+        output_path = self.output_path
         os.environ["PATH"] = str(ffmpeg.parent) + os.pathsep + os.environ.get("PATH", "")
 
         self.busy = True
@@ -1094,6 +1104,7 @@ class SeedanceApp:
             self.progress_label.set("100%")
             self._status(self._text("done"), SUCCESS)
             self._log(f"Done: {output_path}")
+            self._refresh_output()
             if self.open_done.get():
                 open_folder(output_path.parent)
         else:
@@ -1192,11 +1203,13 @@ def windows_clipboard_files() -> list[Path]:
 
 
 def build_output_path(input_path: Path, output_dir: Path) -> Path:
-    candidate = output_dir / f"{input_path.stem}_clean.mp4"
+    stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    suffix = f"{stamp}_{uuid.uuid4().hex[:6]}"
+    candidate = output_dir / f"{input_path.stem}_clean_{suffix}.mp4"
     if not candidate.exists():
         return candidate
     for index in range(2, 1000):
-        candidate = output_dir / f"{input_path.stem}_clean_{index}.mp4"
+        candidate = output_dir / f"{input_path.stem}_clean_{suffix}_{index}.mp4"
         if not candidate.exists():
             return candidate
     raise RuntimeError("Too many existing output files.")
