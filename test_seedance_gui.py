@@ -56,7 +56,7 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
 
     def test_parse_version_accepts_semver_tags(self) -> None:
         self.assertEqual(parse_version("v1.2.0"), (1, 2, 0))
-        self.assertEqual(parse_version("1.2.3"), (1, 2, 3))
+        self.assertEqual(parse_version("1.2.4"), (1, 2, 4))
         self.assertEqual(parse_version("v2.0.0-beta"), (2, 0, 0))
         self.assertIsNone(parse_version("latest"))
 
@@ -240,6 +240,34 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
                 (242, 242, 242),
                 markerType=cv2.MARKER_STAR,
                 markerSize=52,
+                thickness=5,
+                line_type=cv2.LINE_AA,
+            )
+            frames.append(frame.astype(np.float32))
+
+        mean_frame = np.mean(np.stack(frames), axis=0).astype(np.uint8)
+        detected = _auto_detect(frames, mean_frame, width, height, (WATERMARK_GEMINI,))
+
+        self.assertIsNotNone(detected)
+        x, y, w, h = detected
+        self.assertLessEqual(x, center[0])
+        self.assertLessEqual(y, center[1])
+        self.assertGreaterEqual(x + w, center[0])
+        self.assertGreaterEqual(y + h, center[1])
+
+    def test_gemini_auto_detect_ignores_center_right_false_positive_on_landscape_video(self) -> None:
+        width, height = 1280, 720
+        frames = []
+        center = (1184, 640)
+        for _ in range(8):
+            frame = np.full((height, width, 3), (95, 118, 128), dtype=np.uint8)
+            cv2.circle(frame, (720, 420), 24, (238, 238, 238), -1, cv2.LINE_AA)
+            cv2.drawMarker(
+                frame,
+                center,
+                (242, 242, 242),
+                markerType=cv2.MARKER_STAR,
+                markerSize=54,
                 thickness=5,
                 line_type=cv2.LINE_AA,
             )
