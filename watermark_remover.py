@@ -4,11 +4,13 @@
 from __future__ import annotations
 
 import argparse
+import datetime as dt
 import os
 import shutil
 import subprocess
 import sys
 import tempfile
+import uuid
 
 import cv2
 import numpy as np
@@ -16,6 +18,59 @@ import numpy as np
 WATERMARK_SEEDANCE = "seedance"
 WATERMARK_GEMINI = "gemini"
 WATERMARK_TYPES = (WATERMARK_SEEDANCE, WATERMARK_GEMINI)
+
+
+def _find_ffmpeg_executable():
+    candidates = []
+    if getattr(sys, "frozen", False):
+        app_dir = os.path.dirname(sys.executable)
+        candidates.extend(
+            [
+                os.path.join(app_dir, "ffmpeg.exe"),
+                os.path.join(app_dir, "_internal", "ffmpeg.exe"),
+            ]
+        )
+    bundle_dir = getattr(sys, "_MEIPASS", "")
+    if bundle_dir:
+        candidates.extend(
+            [
+                os.path.join(bundle_dir, "ffmpeg.exe"),
+                os.path.join(bundle_dir, "_internal", "ffmpeg.exe"),
+            ]
+        )
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    candidates.extend(
+        [
+            os.path.join(script_dir, "ffmpeg.exe"),
+            os.path.join(script_dir, "_internal", "ffmpeg.exe"),
+        ]
+    )
+    path_ffmpeg = shutil.which("ffmpeg")
+    if path_ffmpeg:
+        candidates.append(path_ffmpeg)
+
+    for candidate in candidates:
+        if candidate and os.path.exists(candidate):
+            return candidate
+    return "ffmpeg"
+
+
+def _print_ffmpeg_failure(completed):
+    print("Error: ffmpeg reassembly failed.")
+    stderr = (completed.stderr or "").strip()
+    stdout = (completed.stdout or "").strip()
+    if stderr:
+        print("ffmpeg stderr:")
+        print(stderr[-4000:])
+    if stdout:
+        print("ffmpeg stdout:")
+        print(stdout[-4000:])
+
+
+def build_default_output_path(input_path):
+    base, _ext = os.path.splitext(input_path)
+    stamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{base}_clean_{stamp}_{uuid.uuid4().hex[:6]}.mp4"
 
 
 def _normalize_watermark_types(watermark_types=None):
@@ -349,8 +404,11 @@ def remove_watermark(input_path, output_path, manual_region=None, watermark_type
         print()
 
         print("Reassembling video with original audio...")
+        ffmpeg_executable = _find_ffmpeg_executable()
+        print(f"Using ffmpeg: {ffmpeg_executable}")
         cmd = [
-            "ffmpeg",
+            ffmpeg_executable,
+            "-y",
             "-framerate",
             str(fps),
             "-i",
@@ -374,21 +432,20 @@ def remove_watermark(input_path, output_path, manual_region=None, watermark_type
             "-movflags",
             "+faststart",
             output_path,
-            "-y",
         ]
-        ret_code = subprocess.run(cmd, capture_output=True).returncode
+        completed = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace")
 
     finally:
         shutil.rmtree(frames_dir, ignore_errors=True)
 
-    if ret_code == 0:
+    if completed.returncode == 0:
         in_mb = os.path.getsize(input_path) / 1024 / 1024
         out_mb = os.path.getsize(output_path) / 1024 / 1024
         print(f"\nDone.  {in_mb:.1f} MB  ->  {out_mb:.1f} MB")
         print(f"Output: {output_path}")
         return True
 
-    print("Error: ffmpeg reassembly failed.")
+    _print_ffmpeg_failure(completed)
     return False
 
 
@@ -405,7 +462,7 @@ def parse_region(value):
 def main():
     parser = argparse.ArgumentParser(description="Remove small static corner watermarks from videos.")
     parser.add_argument("input", help="Input video file")
-    parser.add_argument("-o", "--output", help="Output path (default: <input>_clean.mp4)")
+    parser.add_argument("-o", "--output", help="Output path (default: <input>_clean_<timestamp>_<id>.mp4)")
     parser.add_argument(
         "-r",
         "--region",
@@ -423,7 +480,7 @@ def main():
         print(f"Error: file not found: {args.input}")
         sys.exit(1)
 
-    output = args.output or os.path.splitext(args.input)[0] + "_clean.mp4"
+    output = args.output or build_default_output_path(args.input)
 
     region = None
     if args.region:

@@ -21,7 +21,16 @@ from seedance_gui import (
     parse_version,
     prepare_self_update,
 )
-from watermark_remover import WATERMARK_GEMINI, _auto_detect
+from watermark_remover import WATERMARK_GEMINI, _auto_detect, build_default_output_path
+
+
+def absolute_widget_right(widget, root) -> int:
+    x = 0
+    current = widget
+    while current is not root:
+        x += current.winfo_x()
+        current = current.master
+    return x + widget.winfo_width()
 
 
 def absolute_widget_bottom(widget, root) -> int:
@@ -87,7 +96,7 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
     def test_build_centered_geometry_clamps_to_small_screen(self) -> None:
         self.assertEqual(build_centered_geometry(1024, 768), "900x720+62+24")
 
-    def test_initial_layout_shows_primary_action_without_resize(self) -> None:
+    def test_initial_layout_fits_key_controls_on_standard_desktop(self) -> None:
         app = SeedanceApp(hidden=False, check_updates_on_startup=False)
         try:
             root = app.root
@@ -95,31 +104,21 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
             root.update()
             button_bottom = absolute_widget_bottom(app.run_btn, root)
             self.assertLessEqual(button_bottom, root.winfo_height())
-        finally:
-            app.destroy()
 
-    def test_initial_layout_shows_footer_links_on_standard_desktop(self) -> None:
-        app = SeedanceApp(hidden=False, check_updates_on_startup=False)
-        try:
-            root = app.root
             root.geometry("900x1032+0+0")
             root.update_idletasks()
             root.update()
             footer_bottom = absolute_widget_bottom(app.telegram_contact_link, root)
             self.assertLessEqual(footer_bottom, root.winfo_height())
-        finally:
-            app.destroy()
-
-    def test_initial_layout_includes_update_button_on_standard_desktop(self) -> None:
-        app = SeedanceApp(hidden=False, check_updates_on_startup=False)
-        try:
-            root = app.root
-            root.geometry("900x1032+0+0")
-            root.update_idletasks()
-            root.update()
             self.assertIn("update", app.update_btn.cget("text").lower())
             update_bottom = absolute_widget_bottom(app.update_btn, root)
             self.assertLessEqual(update_bottom, root.winfo_height())
+            self.assertLess(
+                absolute_widget_right(app.telegram_contact_link, root),
+                app.update_btn.winfo_rootx() - root.winfo_rootx(),
+            )
+            self.assertLessEqual(absolute_widget_right(app.update_btn, root), root.winfo_width())
+            self.assertLessEqual(app.subtitle_label.cget("wraplength"), app.title_label.master.winfo_width())
         finally:
             app.destroy()
 
@@ -128,15 +127,28 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
         self.assertEqual(get_ui_text("Русский", "browse"), "Выбрать видео")
         self.assertEqual(get_ui_text("中文", "browse"), "选择视频")
 
-    def test_build_output_path_avoids_overwriting_existing_files(self) -> None:
+    def test_build_output_path_uses_unique_clean_names(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             folder = Path(tmp)
             source = folder / "clip.mp4"
-            first = folder / "clip_clean.mp4"
             source.write_bytes(b"source")
-            first.write_bytes(b"existing")
 
-            self.assertEqual(build_output_path(source, folder), folder / "clip_clean_2.mp4")
+            first = build_output_path(source, folder)
+            second = build_output_path(source, folder)
+
+            self.assertNotEqual(first, second)
+            self.assertEqual(first.parent, folder)
+            self.assertTrue(first.name.startswith("clip_clean_"))
+            self.assertEqual(first.suffix, ".mp4")
+
+    def test_cli_default_output_path_uses_unique_clean_name(self) -> None:
+        first = Path(build_default_output_path("C:/tmp/clip.mp4"))
+        second = Path(build_default_output_path("C:/tmp/clip.mp4"))
+
+        self.assertNotEqual(first, second)
+        self.assertEqual(first.parent, Path("C:/tmp"))
+        self.assertTrue(first.name.startswith("clip_clean_"))
+        self.assertEqual(first.suffix, ".mp4")
 
     def test_auto_detect_covers_wide_top_right_watermark_on_portrait_video(self) -> None:
         width, height = 540, 960
