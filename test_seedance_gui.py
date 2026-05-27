@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 
 import cv2
@@ -12,9 +13,13 @@ from seedance_gui import (
     build_centered_geometry,
     build_output_path,
     choose_window_size,
+    extract_zip_safely,
     get_ui_text,
+    is_newer_version,
     normalize_path,
     parse_region,
+    parse_version,
+    prepare_self_update,
 )
 from watermark_remover import WATERMARK_GEMINI, _auto_detect
 
@@ -38,6 +43,33 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
             with self.subTest(value=value):
                 self.assertIsNone(parse_region(value))
 
+    def test_parse_version_accepts_semver_tags(self) -> None:
+        self.assertEqual(parse_version("v1.2.0"), (1, 2, 0))
+        self.assertEqual(parse_version("1.2.3"), (1, 2, 3))
+        self.assertEqual(parse_version("v2.0.0-beta"), (2, 0, 0))
+        self.assertIsNone(parse_version("latest"))
+
+    def test_is_newer_version_compares_semver_numbers(self) -> None:
+        self.assertTrue(is_newer_version("v1.2.0", "1.1.9"))
+        self.assertFalse(is_newer_version("v1.1.9", "1.2.0"))
+        self.assertFalse(is_newer_version("v1.2.0", "1.2.0"))
+
+    def test_prepare_self_update_rejects_source_runtime(self) -> None:
+        with self.assertRaisesRegex(RuntimeError, "portable EXE"):
+            prepare_self_update({"version": "v9.9.9", "download_url": "https://example.invalid/app.zip"})
+
+    def test_extract_zip_safely_rejects_path_traversal(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            folder = Path(tmp)
+            zip_path = folder / "bad.zip"
+            target = folder / "target"
+            target.mkdir()
+            with zipfile.ZipFile(zip_path, "w") as archive:
+                archive.writestr("../escape.txt", "bad")
+
+            with self.assertRaisesRegex(RuntimeError, "Unsafe path"):
+                extract_zip_safely(zip_path, target)
+
     def test_normalize_path_handles_quoted_and_file_url_values(self) -> None:
         self.assertEqual(normalize_path('"C:/tmp/video.mp4"'), Path("C:/tmp/video.mp4"))
         self.assertEqual(normalize_path("{file:///C:/tmp/video.mp4}"), Path("C:/tmp/video.mp4"))
@@ -56,7 +88,7 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
         self.assertEqual(build_centered_geometry(1024, 768), "900x720+62+24")
 
     def test_initial_layout_shows_primary_action_without_resize(self) -> None:
-        app = SeedanceApp(hidden=False)
+        app = SeedanceApp(hidden=False, check_updates_on_startup=False)
         try:
             root = app.root
             root.update_idletasks()
@@ -67,7 +99,7 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
             app.destroy()
 
     def test_initial_layout_shows_footer_links_on_standard_desktop(self) -> None:
-        app = SeedanceApp(hidden=False)
+        app = SeedanceApp(hidden=False, check_updates_on_startup=False)
         try:
             root = app.root
             root.geometry("900x1032+0+0")
@@ -75,6 +107,19 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
             root.update()
             footer_bottom = absolute_widget_bottom(app.telegram_contact_link, root)
             self.assertLessEqual(footer_bottom, root.winfo_height())
+        finally:
+            app.destroy()
+
+    def test_initial_layout_includes_update_button_on_standard_desktop(self) -> None:
+        app = SeedanceApp(hidden=False, check_updates_on_startup=False)
+        try:
+            root = app.root
+            root.geometry("900x1032+0+0")
+            root.update_idletasks()
+            root.update()
+            self.assertIn("update", app.update_btn.cget("text").lower())
+            update_bottom = absolute_widget_bottom(app.update_btn, root)
+            self.assertLessEqual(update_bottom, root.winfo_height())
         finally:
             app.destroy()
 

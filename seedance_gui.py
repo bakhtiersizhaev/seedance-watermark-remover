@@ -4,15 +4,19 @@ from __future__ import annotations
 import argparse
 import contextlib
 import ctypes
+import json
 import os
 import queue
 import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import threading
 import tkinter as tk
+import urllib.request
 import webbrowser
+import zipfile
 from pathlib import Path
 from tkinter import filedialog, messagebox
 
@@ -27,8 +31,11 @@ except ImportError:
     TkinterDnD = None
 
 APP_NAME = "Seedance Watermark Remover"
-APP_VERSION = "1.1.1"
+APP_VERSION = "1.2.0"
 GITHUB_URL = "https://github.com/bakhtiersizhaev/seedance-watermark-remover"
+GITHUB_RELEASES_URL = f"{GITHUB_URL}/releases"
+GITHUB_LATEST_RELEASE_API = "https://api.github.com/repos/bakhtiersizhaev/seedance-watermark-remover/releases/latest"
+RELEASE_ZIP_NAME = "SeedanceWatermarkRemover-Windows-x64-portable.zip"
 TELEGRAM_CHANNEL_URL = "https://t.me/ai2key"
 TELEGRAM_AUTHOR_URL = "https://t.me/bakhtier_sizhaev"
 VIDEO_EXTENSIONS = {".mp4", ".mov", ".mkv", ".avi", ".webm", ".m4v"}
@@ -131,6 +138,18 @@ UI_TEXT = {
         "made_by": "GitHub, made by Bakhtier Sizhaev",
         "telegram_channel": "Telegram channel: ai2key",
         "telegram_contact": "Author contact: bakhtier_sizhaev",
+        "check_updates": "Check updates",
+        "checking_updates": "Checking updates...",
+        "up_to_date": "Up to date",
+        "update_available": "Update to {version}",
+        "update_failed": "Update check failed",
+        "update_download": "Downloading update {version}...",
+        "update_installing": "Installing update. The app will restart.",
+        "update_open_release": "Open latest release",
+        "update_confirm_title": "Update available",
+        "update_confirm": "Version {version} is available. Download it and restart the portable app now?",
+        "update_not_frozen": "Auto-update works in the portable EXE. Opening the download page instead.",
+        "update_no_download": "No Windows ZIP asset was found in the latest release.",
     },
     "ru": {
         "app_title": "Seedance Cleaner",
@@ -175,6 +194,18 @@ UI_TEXT = {
         "made_by": "GitHub, сделано Bakhtier Sizhaev",
         "telegram_channel": "Telegram-канал: ai2key",
         "telegram_contact": "Контакт автора: bakhtier_sizhaev",
+        "check_updates": "Проверить обновления",
+        "checking_updates": "Проверяю обновления...",
+        "up_to_date": "Версия свежая",
+        "update_available": "Обновить до {version}",
+        "update_failed": "Не удалось проверить обновления",
+        "update_download": "Скачиваю обновление {version}...",
+        "update_installing": "Устанавливаю обновление. Приложение перезапустится.",
+        "update_open_release": "Открыть свежий релиз",
+        "update_confirm_title": "Доступно обновление",
+        "update_confirm": "Доступна версия {version}. Скачать ее и перезапустить portable-приложение сейчас?",
+        "update_not_frozen": "Автообновление работает в portable EXE. Открываю страницу скачивания.",
+        "update_no_download": "В свежем релизе не найден Windows ZIP.",
     },
     "zh": {
         "app_title": "Seedance Cleaner",
@@ -219,6 +250,18 @@ UI_TEXT = {
         "made_by": "GitHub，由 Bakhtier Sizhaev 制作",
         "telegram_channel": "Telegram 频道：ai2key",
         "telegram_contact": "作者联系方式：bakhtier_sizhaev",
+        "check_updates": "检查更新",
+        "checking_updates": "正在检查更新...",
+        "up_to_date": "已是最新版本",
+        "update_available": "更新到 {version}",
+        "update_failed": "检查更新失败",
+        "update_download": "正在下载更新 {version}...",
+        "update_installing": "正在安装更新，应用将重启。",
+        "update_open_release": "打开最新 release",
+        "update_confirm_title": "发现新版本",
+        "update_confirm": "版本 {version} 已发布。现在下载并重启便携版应用吗？",
+        "update_not_frozen": "自动更新仅适用于便携版 EXE。将打开下载页面。",
+        "update_no_download": "最新 release 中未找到 Windows ZIP 文件。",
     },
 }
 
@@ -228,6 +271,120 @@ def get_ui_text(language: str, key: str, **values: object) -> str:
     bundle = UI_TEXT.get(code, UI_TEXT["en"])
     template = bundle.get(key, UI_TEXT["en"][key])
     return template.format(**values) if values else template
+
+
+VERSION_RE = re.compile(r"^v?(\d+)\.(\d+)\.(\d+)(?:[.-].*)?$")
+
+
+def parse_version(value: str) -> tuple[int, int, int] | None:
+    match = VERSION_RE.match(value.strip())
+    if not match:
+        return None
+    return tuple(int(part) for part in match.groups())
+
+
+def is_newer_version(latest: str, current: str = APP_VERSION) -> bool:
+    latest_version = parse_version(latest)
+    current_version = parse_version(current)
+    return bool(latest_version and current_version and latest_version > current_version)
+
+
+def fetch_latest_release(timeout: float = 6.0) -> dict[str, str]:
+    request = urllib.request.Request(
+        GITHUB_LATEST_RELEASE_API,
+        headers={
+            "Accept": "application/vnd.github+json",
+            "User-Agent": f"SeedanceWatermarkRemover/{APP_VERSION}",
+        },
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        payload = json.loads(response.read().decode("utf-8"))
+
+    tag = str(payload.get("tag_name") or "").strip()
+    if not tag:
+        raise RuntimeError("Latest release does not have a tag_name.")
+
+    download_url = ""
+    for asset in payload.get("assets") or []:
+        if asset.get("name") == RELEASE_ZIP_NAME:
+            download_url = str(asset.get("browser_download_url") or "")
+            break
+
+    return {
+        "version": tag,
+        "release_url": str(payload.get("html_url") or f"{GITHUB_RELEASES_URL}/tag/{tag}"),
+        "download_url": download_url,
+    }
+
+
+def download_file(url: str, destination: Path, timeout: float = 45.0) -> None:
+    request = urllib.request.Request(url, headers={"User-Agent": f"SeedanceWatermarkRemover/{APP_VERSION}"})
+    with urllib.request.urlopen(request, timeout=timeout) as response, destination.open("wb") as target:
+        shutil.copyfileobj(response, target)
+    if destination.stat().st_size <= 0:
+        raise RuntimeError(f"Downloaded file is empty: {destination}")
+
+
+def extract_zip_safely(zip_path: Path, destination: Path) -> None:
+    destination = destination.resolve()
+    with zipfile.ZipFile(zip_path) as archive:
+        for member in archive.infolist():
+            target = (destination / member.filename).resolve()
+            if destination != target and destination not in target.parents:
+                raise RuntimeError(f"Unsafe path in update ZIP: {member.filename}")
+        archive.extractall(destination)
+
+
+def prepare_self_update(release: dict[str, str]) -> Path:
+    if os.name != "nt" or not getattr(sys, "frozen", False):
+        raise RuntimeError("Self-update is only available in the Windows portable EXE.")
+
+    download_url = release.get("download_url") or ""
+    if not download_url:
+        raise RuntimeError("Latest release does not include the Windows portable ZIP.")
+
+    current_exe = Path(sys.executable).resolve()
+    current_dir = current_exe.parent
+    temp_root = Path(tempfile.mkdtemp(prefix="seedance_update_"))
+    zip_path = temp_root / RELEASE_ZIP_NAME
+    extract_root = temp_root / "extract"
+    extract_root.mkdir(parents=True, exist_ok=True)
+
+    download_file(download_url, zip_path)
+    extract_zip_safely(zip_path, extract_root)
+
+    new_dir = extract_root / "SeedanceWatermarkRemover"
+    new_exe = new_dir / "SeedanceWatermarkRemover.exe"
+    if not new_exe.exists():
+        raise RuntimeError("Downloaded update ZIP does not contain SeedanceWatermarkRemover.exe.")
+
+    backup_dir = current_dir.with_name(f"{current_dir.name}_old_update")
+    script_path = temp_root / "install_seedance_update.cmd"
+    release_url = release.get("release_url") or GITHUB_RELEASES_URL
+    pid = os.getpid()
+    script = f"""@echo off
+chcp 65001 >nul
+setlocal
+timeout /t 2 /nobreak >nul
+taskkill /pid {pid} /t /f >nul 2>nul
+if exist "{backup_dir}" rmdir /s /q "{backup_dir}" >nul 2>nul
+ren "{current_dir}" "{backup_dir.name}"
+if errorlevel 1 goto fail
+xcopy "{new_dir}" "{current_dir}\\" /E /I /Y >nul
+if errorlevel 1 goto rollback
+start "" "{current_exe}"
+timeout /t 3 /nobreak >nul
+rmdir /s /q "{backup_dir}" >nul 2>nul
+exit /b 0
+:rollback
+rmdir /s /q "{current_dir}" >nul 2>nul
+ren "{backup_dir}" "{current_dir.name}" >nul 2>nul
+:fail
+start "" "{release_url}"
+exit /b 1
+"""
+    script_path.write_text(script, encoding="utf-8")
+    return script_path
 
 
 def find_resource(*parts: str) -> Path | None:
@@ -267,7 +424,7 @@ class QueueWriter:
 
 
 class SeedanceApp:
-    def __init__(self, hidden: bool = False) -> None:
+    def __init__(self, hidden: bool = False, check_updates_on_startup: bool = True) -> None:
         enable_windows_dpi_awareness()
         ctk.set_appearance_mode("dark")
         ctk.set_default_color_theme("dark-blue")
@@ -293,12 +450,22 @@ class SeedanceApp:
         self.progress_label = tk.StringVar(value="")
         self.output_preview = tk.StringVar(value=self._text("output_empty"))
         self.open_done = tk.BooleanVar(value=True)
+        self.latest_release: dict[str, str] | None = None
+        self.update_busy = False
+        self.update_available = False
+        self._drain_after_id: str | None = None
+        self._update_check_after_id: str | None = None
+        self._update_blink_after_id: str | None = None
+        self._update_blink_remaining = 0
+        self._update_blink_on = False
 
         self._ui()
         self.root.bind("<Control-v>", lambda _event: self.paste_video())
         self.root.bind("<Control-V>", lambda _event: self.paste_video())
         self.root.bind("<Configure>", self._resize_text_wraps)
-        self.root.after(100, self._drain)
+        self._drain_after_id = self.root.after(100, self._drain)
+        if not hidden and check_updates_on_startup:
+            self._update_check_after_id = self.root.after(1200, lambda: self.check_updates(manual=False))
 
     def _text(self, key: str, **values: object) -> str:
         return get_ui_text(self.language.get(), key, **values)
@@ -544,14 +711,29 @@ class SeedanceApp:
         self.log.configure(state="disabled")
         footer = ctk.CTkFrame(shell, fg_color="transparent")
         footer.grid(row=8, column=0, sticky="ew", pady=(8, 0))
-        for column in range(3):
+        for column in range(4):
             footer.grid_columnconfigure(column, weight=1, uniform="footer")
         self.github_link = self._link_label(footer, self._text("made_by"), GITHUB_URL)
         self.github_link.grid(row=0, column=0, sticky="w")
         self.telegram_channel_link = self._link_label(footer, self._text("telegram_channel"), TELEGRAM_CHANNEL_URL)
         self.telegram_channel_link.grid(row=0, column=1)
         self.telegram_contact_link = self._link_label(footer, self._text("telegram_contact"), TELEGRAM_AUTHOR_URL)
-        self.telegram_contact_link.grid(row=0, column=2, sticky="e")
+        self.telegram_contact_link.grid(row=0, column=2)
+        self.update_btn = ctk.CTkButton(
+            footer,
+            text=self._text("check_updates"),
+            command=lambda: self.check_updates(manual=True),
+            fg_color=CARD_BG_SOFT,
+            hover_color=BORDER,
+            text_color=MUTED,
+            corner_radius=14,
+            border_width=1,
+            border_color=BORDER,
+            height=26,
+            width=154,
+            font=ctk.CTkFont(size=11, weight="bold"),
+        )
+        self.update_btn.grid(row=0, column=3, sticky="e")
         self._log(self._text("ready_log"))
         self._resize_text_wraps()
 
@@ -575,6 +757,7 @@ class SeedanceApp:
         self.github_link.configure(text=self._text("made_by"))
         self.telegram_channel_link.configure(text=self._text("telegram_channel"))
         self.telegram_contact_link.configure(text=self._text("telegram_contact"))
+        self._refresh_update_button()
         self.run_btn.configure(text=self._text("processing") if self.busy else self._text("remove"))
         if not self.input_path.get():
             self.output_preview.set(self._text("output_empty"))
@@ -621,6 +804,129 @@ class SeedanceApp:
         )
         label.bind("<Button-1>", lambda _event: webbrowser.open(url))
         return label
+
+    def check_updates(self, manual: bool = True) -> None:
+        if self.update_busy:
+            return
+        if self.update_available and self.latest_release and manual:
+            self._confirm_and_install_update()
+            return
+
+        self.update_busy = True
+        self.update_btn.configure(text=self._text("checking_updates"), state="disabled")
+        threading.Thread(target=self._update_worker, args=(manual,), daemon=True).start()
+
+    def _update_worker(self, manual: bool) -> None:
+        try:
+            release = fetch_latest_release()
+            self.events.put(("update_checked", release, manual, None))
+        except Exception as exc:
+            self.events.put(("update_checked", None, manual, repr(exc)))
+
+    def _handle_update_checked(self, release: dict[str, str] | None, manual: bool, error: str | None) -> None:
+        self.update_busy = False
+        self.update_btn.configure(state="normal")
+        if error or not release:
+            if manual:
+                self._status(self._text("update_failed"), DANGER)
+                self._log(f"Update check failed: {error}")
+            self._refresh_update_button()
+            return
+
+        self.latest_release = release
+        self.update_available = is_newer_version(release["version"])
+        self._refresh_update_button()
+        if self.update_available:
+            self._status(self._text("update_available", version=release["version"]), SUCCESS)
+            self._start_update_blink()
+            if manual:
+                self._confirm_and_install_update()
+        elif manual:
+            self._status(self._text("up_to_date"), SUCCESS)
+
+    def _refresh_update_button(self) -> None:
+        if self.update_busy:
+            self.update_btn.configure(text=self._text("checking_updates"))
+            return
+        if self.update_available and self.latest_release:
+            self.update_btn.configure(
+                text=self._text("update_available", version=self.latest_release["version"]),
+                fg_color=SUCCESS,
+                hover_color="#7bf0b8",
+                text_color="#06111f",
+                border_color=SUCCESS,
+            )
+        else:
+            self.update_btn.configure(
+                text=self._text("check_updates"),
+                fg_color=CARD_BG_SOFT,
+                hover_color=BORDER,
+                text_color=MUTED,
+                border_color=BORDER,
+            )
+
+    def _start_update_blink(self) -> None:
+        if self._update_blink_after_id:
+            self.root.after_cancel(self._update_blink_after_id)
+        self._update_blink_remaining = 14
+        self._update_blink_on = False
+        self._blink_update_button()
+
+    def _blink_update_button(self) -> None:
+        if not self.update_available or not self.latest_release or self._update_blink_remaining <= 0:
+            self._update_blink_after_id = None
+            self._refresh_update_button()
+            return
+        self._update_blink_on = not self._update_blink_on
+        color = SUCCESS if self._update_blink_on else ACCENT
+        self.update_btn.configure(fg_color=color, border_color=color, text_color="#06111f")
+        self._update_blink_remaining -= 1
+        self._update_blink_after_id = self.root.after(520, self._blink_update_button)
+
+    def _confirm_and_install_update(self) -> None:
+        release = self.latest_release
+        if not release:
+            return
+        if not release.get("download_url"):
+            messagebox.showwarning(APP_NAME, self._text("update_no_download"))
+            webbrowser.open(release.get("release_url") or GITHUB_RELEASES_URL)
+            return
+        confirmed = messagebox.askyesno(
+            self._text("update_confirm_title"),
+            self._text("update_confirm", version=release["version"]),
+        )
+        if not confirmed:
+            return
+        self.update_busy = True
+        self.update_btn.configure(text=self._text("update_download", version=release["version"]), state="disabled")
+        self._status(self._text("update_download", version=release["version"]), ACCENT)
+        threading.Thread(target=self._install_update_worker, args=(release,), daemon=True).start()
+
+    def _install_update_worker(self, release: dict[str, str]) -> None:
+        try:
+            script_path = prepare_self_update(release)
+            self.events.put(("update_ready_to_restart", script_path, None))
+        except Exception as exc:
+            self.events.put(("update_ready_to_restart", None, repr(exc)))
+
+    def _handle_update_ready_to_restart(self, script_path: Path | None, error: str | None) -> None:
+        self.update_busy = False
+        self.update_btn.configure(state="normal")
+        if error or not script_path:
+            self._log(f"Auto-update failed: {error}")
+            if "portable EXE" in (error or ""):
+                self._status(self._text("update_not_frozen"), DANGER)
+            else:
+                self._status(self._text("update_failed"), DANGER)
+            if self.latest_release:
+                webbrowser.open(self.latest_release.get("release_url") or GITHUB_RELEASES_URL)
+            self._refresh_update_button()
+            return
+
+        self._status(self._text("update_installing"), SUCCESS)
+        self._log(f"Launching updater: {script_path}")
+        subprocess.Popen(["cmd", "/c", "start", "", str(script_path)], shell=False)
+        self.destroy()
 
     def _drop(self, event) -> None:
         self._pick_first(parse_drop_paths(self.root, event.data))
@@ -760,9 +1066,13 @@ class SeedanceApp:
                 elif item[0] == "error":
                     self._log(item[1])
                     self._finish(False, None)
+                elif item[0] == "update_checked":
+                    self._handle_update_checked(item[1], item[2], item[3])
+                elif item[0] == "update_ready_to_restart":
+                    self._handle_update_ready_to_restart(item[1], item[2])
         except queue.Empty:
             pass
-        self.root.after(100, self._drain)
+        self._drain_after_id = self.root.after(100, self._drain)
 
     def _status_from_log(self, line: str) -> None:
         if line.startswith("Video:"):
@@ -804,6 +1114,12 @@ class SeedanceApp:
         self.root.mainloop()
 
     def destroy(self) -> None:
+        for after_id in (self._drain_after_id, self._update_check_after_id, self._update_blink_after_id):
+            if after_id:
+                try:
+                    self.root.after_cancel(after_id)
+                except tk.TclError:
+                    pass
         self.root.destroy()
 
 
