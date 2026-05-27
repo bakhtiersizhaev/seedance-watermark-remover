@@ -11,6 +11,7 @@
 [![Download Windows ZIP](https://img.shields.io/badge/Download-Windows%20ZIP-58a6ff?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.1.0/SeedanceWatermarkRemover-Windows-x64-portable.zip)
 [![GitHub Pages](https://img.shields.io/badge/Website-GitHub%20Pages-7c5cff?style=for-the-badge)](https://bakhtiersizhaev.github.io/seedance-watermark-remover/)
 [![Release](https://img.shields.io/badge/Release-v1.1.0-5ee2a0?style=for-the-badge)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/tag/v1.1.0)
+[![CI](https://github.com/bakhtiersizhaev/seedance-watermark-remover/actions/workflows/ci.yml/badge.svg)](https://github.com/bakhtiersizhaev/seedance-watermark-remover/actions/workflows/ci.yml)
 
 **Language:** [English](https://bakhtiersizhaev.github.io/seedance-watermark-remover/) · [Русский](https://bakhtiersizhaev.github.io/seedance-watermark-remover/ru.html) · [中文](https://bakhtiersizhaev.github.io/seedance-watermark-remover/zh.html)
 
@@ -263,6 +264,15 @@ python build_exe.py
 ```
 
 The build script verifies the source app, packaged EXE, release folder, release ZIP, and extracted ZIP smoke path.
+
+## Release Automation
+
+GitHub Actions runs quick quality checks on `main` and pull requests. Pushing a semver tag builds the Windows portable ZIP, writes `SHA256SUMS.txt`, uploads workflow artifacts, and publishes the GitHub Release assets:
+
+```bash
+git tag v1.1.1
+git push origin v1.1.1
+```
 
 ---
 
