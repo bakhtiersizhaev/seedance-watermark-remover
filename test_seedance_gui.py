@@ -44,6 +44,25 @@ def absolute_widget_bottom(widget, root) -> int:
     return y + widget.winfo_height()
 
 
+def draw_gemini_sparkle(frame, center, size, color) -> None:
+    cx, cy = center
+    half = size / 2
+    points = np.array(
+        [
+            (cx, cy - half),
+            (cx + half * 0.24, cy - half * 0.14),
+            (cx + half, cy),
+            (cx + half * 0.24, cy + half * 0.14),
+            (cx, cy + half),
+            (cx - half * 0.24, cy + half * 0.14),
+            (cx - half, cy),
+            (cx - half * 0.24, cy - half * 0.14),
+        ],
+        dtype=np.int32,
+    )
+    cv2.fillPoly(frame, [points], color, lineType=cv2.LINE_AA)
+
+
 class SeedanceGuiPureLogicTests(unittest.TestCase):
     def test_parse_region_accepts_four_non_negative_integers_with_positive_size(self) -> None:
         self.assertEqual(parse_region("1, 2, 30, 40"), (1, 2, 30, 40))
@@ -56,7 +75,7 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
 
     def test_parse_version_accepts_semver_tags(self) -> None:
         self.assertEqual(parse_version("v1.2.0"), (1, 2, 0))
-        self.assertEqual(parse_version("1.2.4"), (1, 2, 4))
+        self.assertEqual(parse_version("1.2.5"), (1, 2, 5))
         self.assertEqual(parse_version("v2.0.0-beta"), (2, 0, 0))
         self.assertIsNone(parse_version("latest"))
 
@@ -234,15 +253,7 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
             frame = np.full((height, width, 3), (90, 112, 126), dtype=np.uint8)
             cv2.rectangle(frame, (480, 600), (535, 760), (230, 230, 230), -1)
             center = (430, 850)
-            cv2.drawMarker(
-                frame,
-                center,
-                (242, 242, 242),
-                markerType=cv2.MARKER_STAR,
-                markerSize=52,
-                thickness=5,
-                line_type=cv2.LINE_AA,
-            )
+            draw_gemini_sparkle(frame, center, 52, (242, 242, 242))
             frames.append(frame.astype(np.float32))
 
         mean_frame = np.mean(np.stack(frames), axis=0).astype(np.uint8)
@@ -262,15 +273,27 @@ class SeedanceGuiPureLogicTests(unittest.TestCase):
         for _ in range(8):
             frame = np.full((height, width, 3), (95, 118, 128), dtype=np.uint8)
             cv2.circle(frame, (720, 420), 24, (238, 238, 238), -1, cv2.LINE_AA)
-            cv2.drawMarker(
-                frame,
-                center,
-                (242, 242, 242),
-                markerType=cv2.MARKER_STAR,
-                markerSize=54,
-                thickness=5,
-                line_type=cv2.LINE_AA,
-            )
+            draw_gemini_sparkle(frame, center, 54, (242, 242, 242))
+            frames.append(frame.astype(np.float32))
+
+        mean_frame = np.mean(np.stack(frames), axis=0).astype(np.uint8)
+        detected = _auto_detect(frames, mean_frame, width, height, (WATERMARK_GEMINI,))
+
+        self.assertIsNotNone(detected)
+        x, y, w, h = detected
+        self.assertLessEqual(x, center[0])
+        self.assertLessEqual(y, center[1])
+        self.assertGreaterEqual(x + w, center[0])
+        self.assertGreaterEqual(y + h, center[1])
+
+    def test_gemini_auto_detect_prefers_sparkle_shape_over_farther_right_blob(self) -> None:
+        width, height = 1920, 1080
+        frames = []
+        center = (1775, 935)
+        for _ in range(8):
+            frame = np.full((height, width, 3), (120, 132, 140), dtype=np.uint8)
+            cv2.circle(frame, (1870, 945), 34, (232, 232, 232), -1, cv2.LINE_AA)
+            draw_gemini_sparkle(frame, center, 68, (242, 242, 242))
             frames.append(frame.astype(np.float32))
 
         mean_frame = np.mean(np.stack(frames), axis=0).astype(np.uint8)

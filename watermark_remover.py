@@ -20,6 +20,40 @@ WATERMARK_GEMINI = "gemini"
 WATERMARK_TYPES = (WATERMARK_SEEDANCE, WATERMARK_GEMINI)
 
 
+def _sparkle_template(size=64):
+    """Return a filled four-point sparkle template used to reject non-logo bright blobs."""
+    edge = size - 1
+    points = np.array(
+        [
+            (0.50 * edge, 0.00 * edge),
+            (0.62 * edge, 0.36 * edge),
+            (1.00 * edge, 0.50 * edge),
+            (0.62 * edge, 0.64 * edge),
+            (0.50 * edge, 1.00 * edge),
+            (0.38 * edge, 0.64 * edge),
+            (0.00 * edge, 0.50 * edge),
+            (0.38 * edge, 0.36 * edge),
+        ],
+        dtype=np.int32,
+    )
+    template = np.zeros((size, size), dtype=np.uint8)
+    cv2.fillPoly(template, [points], 255)
+    return template
+
+
+SPARKLE_TEMPLATE = _sparkle_template()
+
+
+def _sparkle_shape_score(component_mask):
+    resized = cv2.resize(component_mask, SPARKLE_TEMPLATE.shape[::-1], interpolation=cv2.INTER_AREA)
+    _, binary = cv2.threshold(resized, 80, 255, cv2.THRESH_BINARY)
+    kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    binary = cv2.morphologyEx(binary, cv2.MORPH_CLOSE, kernel, iterations=1)
+    intersection = np.logical_and(binary > 0, SPARKLE_TEMPLATE > 0).sum()
+    union = np.logical_or(binary > 0, SPARKLE_TEMPLATE > 0).sum()
+    return float(intersection / max(1, union))
+
+
 def _find_ffmpeg_executable():
     candidates = []
     if getattr(sys, "frozen", False):
@@ -206,8 +240,8 @@ def _auto_detect_gemini(frames, mean_frame, width, height):
     stack = np.stack(frames, axis=0)
     std_map = np.std(stack, axis=0).mean(axis=2)
     shorter_side = min(width, height)
-    search_left = int(width * 0.62)
-    search_top = int(height * 0.62)
+    search_left = int(width * 0.50)
+    search_top = int(height * 0.50)
     roi = mean_frame[search_top:height, search_left:width]
     if roi.size == 0:
         return None
@@ -219,7 +253,7 @@ def _auto_detect_gemini(frames, mean_frame, width, height):
     value = hsv[:, :, 2]
     saturation = hsv[:, :, 1]
     raw = np.where(
-        ((value >= 120) & (saturation <= 135) & (bright_delta >= 2)) | ((value >= 190) & (saturation <= 95)),
+        ((value >= 115) & (saturation <= 145) & (bright_delta >= 1)) | ((value >= 185) & (saturation <= 110)),
         255,
         0,
     )
@@ -232,7 +266,7 @@ def _auto_detect_gemini(frames, mean_frame, width, height):
     min_box = max(18, int(shorter_side * 0.025))
     min_area = max(45, int(shorter_side * shorter_side * 0.00008))
     max_area = max(5000, int(shorter_side * shorter_side * 0.018))
-    max_box = max(62, int(shorter_side * 0.09))
+    max_box = max(90, int(shorter_side * 0.13))
     target_box = max(34.0, shorter_side * 0.058)
     target_area = target_box * target_box
     best_region, best_score = None, 0.0
@@ -252,20 +286,33 @@ def _auto_detect_gemini(frames, mean_frame, width, height):
         if not 0.12 <= fill_ratio <= 0.75:
             continue
 
+        component_mask = np.where(labels[y : y + h, x : x + w] == component_id, 255, 0).astype(np.uint8)
+        shape_score = _sparkle_shape_score(component_mask)
+        if shape_score < 0.50:
+            continue
+
         center_x, center_y = centroids[component_id]
         abs_x = search_left + x
         abs_y = search_top + y
         abs_cx = search_left + float(center_x)
         abs_cy = search_top + float(center_y)
-        if abs_cx < width * 0.72 or abs_cy < height * 0.70:
+        if abs_cx < width * 0.55 or abs_cy < height * 0.55:
             continue
         component_std = float(std_map[abs_y : abs_y + h, abs_x : abs_x + w].mean())
         stability = 1.0 / (1.0 + component_std)
-        corner_bias = (abs_cx / width) ** 8.0 * (abs_cy / height) ** 2.0
+        corner_bias = (abs_cx / width) ** 1.4 * (abs_cy / height) ** 1.6
         compactness = 1.0 - min(1.0, abs(1.0 - aspect) * 0.45)
         size_score = target_box / (target_box + abs(w - target_box) + abs(h - target_box))
         area_score = target_area / (target_area + abs(area - target_area))
-        score = stability * corner_bias * compactness * size_score * (0.45 + area_score) * (0.2 + fill_ratio)
+        score = (
+            stability
+            * corner_bias
+            * compactness
+            * size_score
+            * (0.45 + area_score)
+            * (0.2 + fill_ratio)
+            * (shape_score**4)
+        )
         if score <= best_score:
             continue
 
