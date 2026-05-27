@@ -162,7 +162,7 @@ Recommended Pages setting: publish from the `docs/` folder on the default branch
 Repository description:
 
 ```text
-Offline Windows desktop app for removing small static corner watermarks from videos with OpenCV inpainting.
+Offline Windows video watermark remover for small corner logos, AI-generated marks, Seedance labels, and Gemini sparkle watermarks.
 ```
 
 Recommended GitHub topics:
@@ -172,6 +172,10 @@ seedance
 seedance-watermark-remover
 watermark-remover
 video-watermark-remover
+remove-watermark
+gemini-watermark
+video-cleaner
+ai-video-tools
 video-processing
 opencv
 opencv-python
