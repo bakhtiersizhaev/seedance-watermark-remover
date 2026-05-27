@@ -35,7 +35,7 @@
         <h1>Уберите небольшой watermark из угла видео без загрузки файла в онлайн-сервис.</h1>
         <p class="lead">Seedance Watermark Remover — локальное приложение для Windows от Bakhtier Sizhaev. Оно подходит, когда в MP4 осталась маленькая метка в углу: текст, логотип, Gemini-звезда или пометка от генератора видео, а нужен чистый файл на своём компьютере.</p>
         <div class="actions">
-          <a class="button primary" href="https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.1.1/SeedanceWatermarkRemover-Windows-x64-portable.zip">Скачать Windows ZIP</a>
+          <a class="button primary" href="https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.2.0/SeedanceWatermarkRemover-Windows-x64-portable.zip">Скачать Windows ZIP</a>
           <a class="button secondary" href="#trust">SmartScreen и SHA256</a>
         </div>
       </div>
@@ -72,7 +72,7 @@
         <h2>Три шага. Без настройки.</h2>
       </div>
       <ol>
-        <li><span>1</span><div class="step-copy">Скачайте <a href="https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.1.1/SeedanceWatermarkRemover-Windows-x64-portable.zip"><code>SeedanceWatermarkRemover-Windows-x64-portable.zip</code></a> из релиза v1.1.1.</div></li>
+        <li><span>1</span><div class="step-copy">Скачайте <a href="https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.2.0/SeedanceWatermarkRemover-Windows-x64-portable.zip"><code>SeedanceWatermarkRemover-Windows-x64-portable.zip</code></a> из релиза v1.2.0.</div></li>
         <li><span>2</span><div class="step-copy">Распакуйте ZIP и держите файлы одной папкой.</div></li>
         <li><span>3</span><div class="step-copy">Запустите <code>SeedanceWatermarkRemover.exe</code>, выберите видео и сохраните чистую копию.</div></li>
       </ol>
@@ -87,7 +87,7 @@
       </div>
       <div class="checksum-card">
         <h3>SHA256 checksums</h3>
-        <p>Скачайте <a href="https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.1.1/SHA256SUMS.txt"><code>SHA256SUMS.txt</code></a> со страницы релиза v1.1.1, чтобы проверить portable ZIP и собранный EXE.</p>
+        <p>Скачайте <a href="https://github.com/bakhtiersizhaev/seedance-watermark-remover/releases/download/v1.2.0/SHA256SUMS.txt"><code>SHA256SUMS.txt</code></a> со страницы релиза v1.2.0, чтобы проверить portable ZIP и собранный EXE.</p>
         <h3>План для следующих релизов</h3>
         <p>Если проект будет распространяться шире, следующий правильный шаг — купить OV/EV сертификат подписи кода и подписывать EXE, чтобы Windows показывал проверенного издателя.</p>
       </div>
@@ -109,6 +109,10 @@
       <details>
         <summary>Исходный файл изменится?</summary>
         <p>Нет. Приложение создаёт новый выходной файл и не перезаписывает исходное видео.</p>
+      </details>
+      <details>
+        <summary>Может ли приложение обновляться само?</summary>
+        <p>Да, в Windows portable EXE. Приложение проверяет GitHub Releases, подсвечивает кнопку обновления, если вышла новая версия, скачивает ZIP после подтверждения и перезапускается через небольшой helper.</p>
       </details>
     </section>
 
